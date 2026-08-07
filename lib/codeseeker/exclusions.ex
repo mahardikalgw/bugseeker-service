@@ -20,11 +20,19 @@ defmodule Codeseeker.Exclusions do
   def filter(files) do
     max_files = Application.get_env(:codeseeker, :max_files_per_pr, 30)
     config = Application.get_env(:codeseeker, :exclusions, %{})
+    patterns = compile_patterns(Map.get(config, :patterns, []))
+    config = Map.put(config, :patterns, patterns)
 
     files
     |> Enum.take(max_files)
     |> Enum.map(&classify(&1, config))
     |> split_kept(max_files, length(files))
+  end
+
+  # Config stores patterns as plain strings so they serialize in releases on
+  # every Elixir version; we compile them here.
+  defp compile_patterns(patterns) do
+    Enum.map(patterns, &Regex.compile!/1)
   end
 
   defp classify(file, config) do

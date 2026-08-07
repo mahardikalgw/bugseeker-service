@@ -1,5 +1,5 @@
 # Builder stage
-FROM hexpm/elixir:1.18.0-erlang-27.0.0-slim AS build
+FROM hexpm/elixir:1.18.4-erlang-27.3.4.16-debian-bookworm-20260803-slim AS build
 
 WORKDIR /app
 

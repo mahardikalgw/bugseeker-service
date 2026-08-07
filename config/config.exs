@@ -28,22 +28,24 @@ config :logger, :default_formatter,
 config :phoenix, :json_library, Jason
 
 # Files that are never reviewed, whatever their size.
+# Patterns are strings (compiled at runtime) so releases can serialize them
+# on every supported Elixir version.
 config :codeseeker, :exclusions, %{
   patterns: [
-    ~r/\.lock$/E,
-    ~r/package-lock\.json$/E,
-    ~r/yarn\.lock$/E,
-    ~r/pnpm-lock\.yaml$/E,
-    ~r/go\.sum$/E,
-    ~r/mix\.lock$/E,
-    ~r/\.min\.js$/E,
-    ~r/\.min\.css$/E,
-    ~r/\.pb\.go$/E,
-    ~r{^dist/}E,
-    ~r{^build/}E,
-    ~r{^vendor/}E,
-    ~r{node_modules/}E,
-    ~r{\.svg$|\.png$|\.jpg$|\.jpeg$|\.ico$|\.gif$|\.webp$}E
+    ~S(\.lock$),
+    ~S(package-lock\.json$),
+    ~S(yarn\.lock$),
+    ~S(pnpm-lock\.yaml$),
+    ~S(go\.sum$),
+    ~S(mix\.lock$),
+    ~S(\.min\.js$),
+    ~S(\.min\.css$),
+    ~S(\.pb\.go$),
+    ~S(^dist/),
+    ~S(^build/),
+    ~S(^vendor/),
+    ~S(node_modules/),
+    ~S(\.svg$|\.png$|\.jpg$|\.jpeg$|\.ico$|\.gif$|\.webp$)
   ],
   max_patch_bytes: 300_000,
   max_added_lines: 1_500,
