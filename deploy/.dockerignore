@@ -1,0 +1,11 @@
+_build
+deps
+.env
+.git
+.gitignore
+test
+priv/workspace
+.kilo
+README.md
+PRD.md
+docs
