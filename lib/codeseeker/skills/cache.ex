@@ -47,10 +47,10 @@ defmodule Codeseeker.Skills.Cache do
     dir = Application.get_env(:codeseeker, :skills_dir, "skills")
 
     dir
-    |> File.ls!()
-    |> Enum.filter(&String.ends_with?(&1, ".md"))
-    |> Enum.reduce(%{}, fn filename, acc ->
-      path = Path.join(dir, filename)
+    |> Path.join("**/*.md")
+    |> Path.wildcard()
+    |> Enum.sort()
+    |> Enum.reduce(%{}, fn path, acc ->
       skill = Skill.load(path)
       Map.put(acc, skill.name, skill)
     end)

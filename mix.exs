@@ -39,7 +39,7 @@ defmodule Codeseeker.MixProject do
     [
       codeseeker: [
         include_executables_for: [:unix],
-        steps: [:assemble]
+        steps: [:assemble, :tar]
       ]
     ]
   end

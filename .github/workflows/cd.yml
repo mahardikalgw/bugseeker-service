@@ -27,7 +27,7 @@ jobs:
       - run: mix deps.get --only prod
 
       - name: Build release
-        run: mix release codeseeker
+        run: mix release
 
       - name: Deploy over Tailscale SSH
         env:

@@ -16,7 +16,7 @@ COPY skills ./skills
 COPY priv ./priv
 COPY .formatter.exs ./
 
-RUN mix compile --warnings-as-errors && mix release codeseeker --quiet
+RUN mix compile --warnings-as-errors && mix release
 
 # Runtime stage
 FROM debian:bookworm-slim

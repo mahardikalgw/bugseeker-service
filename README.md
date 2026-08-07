@@ -3,7 +3,7 @@
 > Internal tool: GitHub PR automated review powered by DeepSeek, written in Elixir (Phoenix, no database).
 
 Every `pull_request` `opened`/`synchronize` webhook triggers a review pipeline:
-fetch diff → filter files → per-file DeepSeek review using **README-style skill files** (`skills/*.md`) → CRITICAL/HIGH issues as inline comments, the rest in a summary review.
+fetch diff → filter files → per-file DeepSeek review using **README-style skill files** (`skills/*/README.md`) → CRITICAL/HIGH issues as inline comments, the rest in a summary review.
 
 ## Architecture at a glance
 
@@ -53,7 +53,7 @@ and open a test PR — watch `mix phx.server` logs for `review_finished`.
 
 ## Skills (README-style)
 
-Skills live in `skills/<name>.md`. The bot includes a skill's content verbatim in the prompt
+Skills live in `skills/<name>/README.md`. The bot includes a skill's content verbatim in the prompt
 for files matching its extensions. Optional `## Severity` section:
 
 ```markdown
@@ -63,7 +63,7 @@ for files matching its extensions. Optional `## Severity` section:
 
 raises reported issues whose message matches the key to that severity.
 
-**Adding a skill**: add `skills/<name>.md`, add its extensions to `:skills_manifest`, restart.
+**Adding a skill**: add `skills/<name>/README.md`, add its extensions to `:skills_manifest`, restart.
 
 Available skills: `generic` (fallback), `typescript`, `go`, `php`, `elixir`.
 

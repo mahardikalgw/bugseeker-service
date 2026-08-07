@@ -30,7 +30,7 @@ defmodule Codeseeker.Skills.Skill do
     {content, severity_bias} = parse(content)
 
     %__MODULE__{
-      name: name || Path.basename(path, ".md"),
+      name: name || Path.basename(Path.dirname(path)),
       path: path,
       content: content,
       severity_bias: severity_bias
