@@ -10,31 +10,17 @@ defmodule CodeseekerWeb.WebhookControllerTest do
   setup do
     Mox.set_mox_global()
     Mox.verify_on_exit!()
-
-    # Stop leaked coordinators so they cannot consume mocks of this test.
-    Codeseeker.CoordinatorSup
-    |> DynamicSupervisor.which_children()
-    |> Enum.each(fn
-      {_id, pid, _type, _modules} when is_pid(pid) ->
-        DynamicSupervisor.terminate_child(Codeseeker.CoordinatorSup, pid)
-
-      _ ->
-        :ok
-    end)
-
-    if :ets.whereis(:codeseeker_dedup), do: :ets.delete_all_objects(:codeseeker_dedup)
+    Ecto.Adapters.SQL.Sandbox.checkout(Codeseeker.Repo)
     :ok
   end
 
   describe "signature verification" do
-    test "accepts a valid signature and dispatches a coordinator" do
-      expect(GithubMock, :list_pr_files, fn _repo, _pr -> {:ok, []} end)
-
+    test "accepts a valid signature and enqueues a FetchDiffJob" do
       conn =
         WebhookTestHelper.signed_conn("pull_request", WebhookTestHelper.pull_request_payload())
 
-      assert %{"ok" => true, "dispatched" => "coordinator"} = json_response(conn, 200)
-      wait_until_review_finished("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c")
+      assert %{"ok" => true, "dispatched" => "fetch_diff"} = json_response(conn, 200)
+      assert length(enqueued(Codeseeker.Jobs.FetchDiffJob)) == 1
     end
 
     test "rejects a tampered body with 401" do
@@ -51,6 +37,7 @@ defmodule CodeseekerWeb.WebhookControllerTest do
         |> post("/webhook/github", body)
 
       assert json_response(conn, 401) == %{"error" => "invalid signature"}
+      assert enqueued(Codeseeker.Jobs.FetchDiffJob) == []
     end
 
     test "rejects a request without a signature header with 401" do
@@ -65,18 +52,17 @@ defmodule CodeseekerWeb.WebhookControllerTest do
   end
 
   describe "event filtering" do
-    test "opened and synchronize actions dispatch" do
+    test "opened and synchronize actions enqueue a FetchDiffJob" do
       for action <- ["opened", "synchronize"] do
-        expect(GithubMock, :list_pr_files, fn _repo, _pr -> {:ok, []} end)
-
         payload =
           WebhookTestHelper.pull_request_payload(action: action, head_sha: "sha-#{action}")
 
         conn = WebhookTestHelper.signed_conn("pull_request", payload)
 
-        assert %{"dispatched" => "coordinator"} = json_response(conn, 200)
-        wait_until_review_finished(payload["pull_request"]["head"]["sha"])
+        assert %{"dispatched" => "fetch_diff"} = json_response(conn, 200)
       end
+
+      assert length(enqueued(Codeseeker.Jobs.FetchDiffJob)) == 2
     end
 
     test "other actions and events are no-ops" do
@@ -92,6 +78,8 @@ defmodule CodeseekerWeb.WebhookControllerTest do
 
       conn = WebhookTestHelper.signed_conn("ping", %{"zen" => "keep it simple"})
       assert %{"ok" => true} = json_response(conn, 200)
+
+      assert enqueued(Codeseeker.Jobs.FetchDiffJob) == []
     end
   end
 
@@ -150,15 +138,7 @@ defmodule CodeseekerWeb.WebhookControllerTest do
     end
   end
 
-  defp wait_until_review_finished(head_sha) do
-    key = {"acme-internal", "web-frontend", 12, head_sha}
-    deadline = System.monotonic_time(:millisecond) + 2_000
-
-    unless Codeseeker.Dedup.done?(key) do
-      if System.monotonic_time(:millisecond) < deadline do
-        Process.sleep(10)
-        wait_until_review_finished(head_sha)
-      end
-    end
+  defp enqueued(worker) do
+    Oban.Testing.all_enqueued(repo: Codeseeker.Repo, worker: worker)
   end
 end

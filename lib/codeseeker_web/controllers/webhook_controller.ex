@@ -11,7 +11,7 @@ defmodule CodeseekerWeb.WebhookController do
 
   require Logger
 
-  alias Codeseeker.{Commands, CoordinatorSup}
+  alias Codeseeker.{Commands, Jobs.FetchDiffJob}
 
   @github_event_header "x-github-event"
   @signature_header "x-hub-signature-256"
@@ -92,27 +92,27 @@ defmodule CodeseekerWeb.WebhookController do
          %{"head" => %{"sha" => head_sha}, "base" => %{"sha" => base_sha}} <-
            payload["pull_request"],
          pr_number when is_integer(pr_number) <- payload["number"] do
-      pr = %{
-        repo: repo,
-        pr_number: pr_number,
-        head_sha: head_sha,
-        base_sha: base_sha
-      }
-
       Logger.info("webhook pull_request",
         action: action,
         repo: "#{repo.owner}/#{repo.name}",
-        pr: pr.pr_number,
-        head_sha: pr.head_sha
+        pr: pr_number,
+        head_sha: head_sha
       )
 
-      case CoordinatorSup.start_child(pr) do
-        {:ok, _pid} ->
-          json(conn, %{ok: true, dispatched: "coordinator"})
+      args = %{
+        "repo" => %{
+          "github_repo_id" => repo.github_repo_id,
+          "owner" => repo.owner,
+          "name" => repo.name,
+          "installation_id" => repo.installation_id
+        },
+        "pr_number" => pr_number,
+        "head_sha" => head_sha,
+        "base_sha" => base_sha
+      }
 
-        {:error, reason} ->
-          json(conn, %{ok: true, dispatched: "ignored", reason: inspect(reason)})
-      end
+      Oban.insert(FetchDiffJob.new(args))
+      json(conn, %{ok: true, dispatched: "fetch_diff"})
     else
       _ -> json(conn, %{ok: true})
     end

@@ -10,3 +10,7 @@ Application.put_env(:codeseeker, :llm_client, Codeseeker.Llm.DeepSeek.Mock)
 # Fast retries in tests
 Application.put_env(:codeseeker, :github_retry_backoff_ms, [1, 1])
 Application.put_env(:codeseeker, :llm, %{max_retries: 2, retry_backoff_ms: [1, 1]})
+
+# Sandbox: DB writes are isolated per test. Tests that touch the DB must be
+# async: false and check out a connection (see RepoCase).
+Ecto.Adapters.SQL.Sandbox.mode(Codeseeker.Repo, :manual)

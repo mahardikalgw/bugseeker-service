@@ -53,3 +53,15 @@ config :codeseeker, :llm_api, %{
   api_url: System.get_env("DEEPSEEK_API_URL") || "https://api.deepseek.com",
   model: System.get_env("DEEPSEEK_MODEL") || "deepseek-chat"
 }
+
+# Database connection. In dev/test it falls back to local Postgres defaults
+# from config/config.exs; production requires DATABASE_URL.
+database_url = System.get_env("DATABASE_URL")
+
+if strict? and is_nil(database_url) do
+  raise "environment variable DATABASE_URL is missing"
+end
+
+if database_url do
+  config :codeseeker, Codeseeker.Repo, url: database_url, pool_size: 20
+end

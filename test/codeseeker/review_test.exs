@@ -74,11 +74,10 @@ defmodule Codeseeker.ReviewTest do
       assert result.summary_body =~ "cross-file concern"
     end
 
-    test "zero issues produce a header-only body" do
+    test "zero issues and no notes produce an empty body (caller posts default)" do
       result = Review.aggregate([], patches(), [], [], pr())
       assert result.inline == []
-      assert result.summary_body =~ "## 🤖 Codeseeker Review — PR #12"
-      assert result.summary_body =~ "Automatic review"
+      assert result.summary_body == ""
     end
 
     test "includes skipped files and warnings in the notes section" do

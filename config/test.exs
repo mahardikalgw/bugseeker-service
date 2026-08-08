@@ -10,6 +10,18 @@ config :logger, level: :warning
 
 config :phoenix, :plug_init_mode, :runtime
 
+# Test database
+config :codeseeker, Codeseeker.Repo,
+  hostname: "localhost",
+  database: "codeseeker_test",
+  pool: Ecto.Adapters.SQL.Sandbox,
+  pool_size: 10
+
+# Oban in manual mode: tests enqueue/perform jobs explicitly. Testing mode
+# disables queues, plugins, and uses an isolated (DB-free) peer; an isolated
+# notifier avoids opening a Postgres LISTEN connection into the sandbox.
+config :oban, Oban, testing: :manual, notifier: Oban.Notifiers.Isolated
+
 # Dummy GitHub App credentials for tests (never used for real API calls —
 # all HTTP is mocked via Mox). The PEM fixture is a throwaway RSA key.
 config :codeseeker, :github, %{

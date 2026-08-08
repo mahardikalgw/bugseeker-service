@@ -1,31 +1,33 @@
 # Codeseeker — AI Code Review Bot
 
-> Internal tool: GitHub PR automated review powered by DeepSeek, written in Elixir (Phoenix, no database).
+> Internal tool: GitHub PR automated review powered by DeepSeek, written in Elixir (Phoenix + PostgreSQL + Oban).
 
 Every `pull_request` `opened`/`synchronize` webhook triggers a review pipeline:
 fetch diff → filter files → per-file DeepSeek review using **README-style skill files** (`skills/*/README.md`) → CRITICAL/HIGH issues as inline comments, the rest in a summary review.
 
 ## Architecture at a glance
 
-- **No database.** Everything is in-memory: de-duplication via an ETS guard (TTL), stats via ETS counters, audit trail via structured logs.
-- **Concurrency**: one `Coordinator` GenServer per PR (`DynamicSupervisor`), files reviewed with `Task.async_stream(max_concurrency: 10)`.
-- **Retry**: in-process exponential backoff for transient DeepSeek/GitHub errors (does not survive a restart — documented limitation).
+- **Durable queue (Oban + PostgreSQL)**: webhooks are enqueued and processed reliably. Nothing is lost on restart — the whole 500-PR backlog survives a restart.
+- **Idempotency**: a review run is keyed by `(github_repo_id, pr_number, head_sha)` with a DB unique constraint, so GitHub webhook redelivery never duplicates work.
+- **Rate limiting for scale**: Oban's `review` queue is capped at `limit: 30` — that is the **global ceiling on concurrent DeepSeek calls**. Hundreds of PRs can be accepted at once; files are processed 30-at-a-time without rate-limit storms.
+- **Pipeline**: `FetchDiffJob` (intake) → `ReviewFileJob` × N (one per file) → `AggregateReviewJob` (posts the review when the last file finishes, via a row-locked completion counter).
 - **Skills**: Markdown files in `skills/` that the bot reads and tells the LLM to follow. Extension → skill mapping in `config/config.exs` (`:skills_manifest`).
 
 ## Local development
 
 ### Requirements
 
-- Elixir >= 1.18 (Erlang/OTP 27), Postgres not required.
-- A GitHub App (see below) and a DeepSeek API key for real end-to-end runs. All tests run against Mox mocks — no credentials needed.
+- Elixir >= 1.18 (Erlang/OTP 27) and a running PostgreSQL.
+- A GitHub App (see below) and a DeepSeek API key for real end-to-end runs. All tests run against Mox mocks + the local Postgres.
 
 ### Setup
 
 ```bash
 mix deps.get
+mix ecto.create && mix ecto.migrate
 cp .env.example .env        # fill in values for e2e
-mix test                    # 80 tests, fully mocked
-mix codeseeker.stats        # in-memory counters (after some reviews)
+mix test                    # 84 tests (DB sandbox + mocks)
+mix codeseeker.stats        # runtime counters
 mix phx.server              # runs on PORT (default 4000)
 ```
 
@@ -38,7 +40,7 @@ tailscale funnel --bg 4000
 ```
 
 Then set the GitHub App webhook URL to `https://<machine>.<tailnet>.ts.net/webhook/github`
-and open a test PR — watch `mix phx.server` logs for `review_finished`.
+and open a test PR — watch `mix phx.server` logs for `fetch_diff enqueued review` and `all files reviewed — enqueueing aggregate`.
 
 ## GitHub App setup
 
@@ -93,9 +95,14 @@ Runtime changes (lost on restart — persist them in the config above):
 | `:min_inline_severity` | `"HIGH"` | Issues ≥ this severity become inline comments; the rest go to the summary |
 | `:max_files_per_pr` | `30` | Hard cap of reviewed files per PR |
 | `:exclusions` | — | Lockfiles/generated/binary/oversized-file skip rules (`max_patch_bytes: 300_000`, `max_added_lines: 1_500`) |
-| `:review_concurrency` | `10` | `Task.async_stream` concurrency (DeepSeek burst control) |
 | `:guidelines_path` | `docs/engineering-guidelines.md` | Repo file fetched per PR and appended to prompts |
-| `:dedup_ttl_seconds` | `3600` | Window in which the same `(repo, pr, head_sha)` is not re-reviewed |
+
+**Oban queues** (the 500-PR scale levers):
+
+| Queue | `limit` | Meaning |
+|---|---|---|
+| `webhook` | 4 | Concurrent GitHub payload intake jobs |
+| `review` | **30** | **Global cap on concurrent DeepSeek calls** — raise/lower to trade throughput vs rate-limit risk |
 
 ## Deployment
 
@@ -104,13 +111,14 @@ for CI (lint + test) and CD (tag-triggered release push over Tailscale SSH).
 
 Checklist:
 
-1. `deploy/codeseeker.env.example` → `/etc/codeseeker.env` (chmod 600) with real secrets.
-2. Build the release, extract to `/opt/codeseeker`, enable `codeseeker.service`.
-3. Expose the webhook publicly (`tailscale funnel --bg 4000` on the VPS, or a reverse proxy).
-4. Point the GitHub App webhook URL at `https://<host>/webhook/github` and confirm a `ping` event in the logs.
+1. Provision PostgreSQL on the VPS and create `codeseeker_prod` (plus a user + password).
+2. `deploy/codeseeker.env.example` → `/etc/codeseeker.env` (chmod 600) with real secrets, including `DATABASE_URL`.
+3. Build the release, extract to `/opt/codeseeker`, run `bin/codeseeker eval "Ecto.Migrator.run(Codeseeker.Repo, ...)"` (or `mix ecto.migrate`) to create the Oban + review tables, then enable `codeseeker.service`.
+4. Expose the webhook publicly (`tailscale funnel --bg 4000` on the VPS, or a reverse proxy).
+5. Point the GitHub App webhook URL at `https://<host>/webhook/github` and confirm a `ping` event in the logs.
 
 ## Known limitations
 
-- No persistent storage: dedup, stats and per-repo runtime toggles are lost on restart; in-flight reviews are dropped.
+- Per-repo runtime toggles (`/codeseeker`) are in-memory and reset on restart — persist them in `config :codeseeker, :repos`.
 - `/codeseeker` commands can be triggered by anyone who can comment on a PR (internal single-org tool).
 - False positives are controlled by severity thresholds and the skill files; review them every 2 weeks (PRD §3).

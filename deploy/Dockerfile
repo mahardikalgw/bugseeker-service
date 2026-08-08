@@ -30,6 +30,10 @@ WORKDIR /opt/codeseeker
 
 COPY --from=build /app/_build/prod/rel/codeseeker ./
 
+# Self-migrates on boot (Postgres must be reachable and DATABASE_URL set).
+COPY deploy/entrypoint.sh ./bin/entrypoint.sh
+RUN chmod +x ./bin/entrypoint.sh
+
 USER codeseeker
 
 ENV PORT=4000 \
@@ -40,4 +44,4 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD curl -f http://localhost:4000/healthz || exit 1
 
-CMD ["/opt/codeseeker/bin/codeseeker", "start"]
+CMD ["/opt/codeseeker/bin/entrypoint.sh"]

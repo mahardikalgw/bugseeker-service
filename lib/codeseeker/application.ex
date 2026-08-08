@@ -6,12 +6,12 @@ defmodule Codeseeker.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      Codeseeker.Repo,
       Codeseeker.Skills.Cache,
       Codeseeker.PerRepo,
       Codeseeker.Github.AppAuth,
-      Codeseeker.Dedup,
       Codeseeker.Stats,
-      Codeseeker.CoordinatorSup,
+      {Oban, Application.fetch_env!(:oban, Oban)},
       # Start to serve requests, typically the last entry
       CodeseekerWeb.Endpoint
     ]

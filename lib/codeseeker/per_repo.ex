@@ -91,5 +91,11 @@ defmodule Codeseeker.PerRepo do
     end)
   end
 
-  defp key(repo), do: "#{repo.owner}/#{repo.name}"
+  # Repo maps arrive as atom keys from webhooks/commands and as string keys
+  # from Oban job args — accept both.
+  defp key(repo) do
+    owner = Map.get(repo, :owner) || repo["owner"]
+    name = Map.get(repo, :name) || repo["name"]
+    "#{owner}/#{name}"
+  end
 end

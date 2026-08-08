@@ -33,6 +33,11 @@ mkdir -p /opt/codeseeker
 tar -xzf /tmp/codeseeker.tar.gz -C /opt/codeseeker
 rm -f /tmp/codeseeker.tar.gz
 
+# Run pending migrations (requires env vars from /etc/codeseeker.env).
+cd /opt/codeseeker
+set -a; . /etc/codeseeker.env; set +a
+bin/codeseeker eval "Codeseeker.Release.migrate()"
+
 systemctl restart codeseeker
 sleep 3
 systemctl --no-pager -l status codeseeker || true

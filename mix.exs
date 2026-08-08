@@ -54,6 +54,10 @@ defmodule Codeseeker.MixProject do
       {:joken, "~> 2.6"},
       {:jason, "~> 1.2"},
       {:bandit, "~> 1.5"},
+      {:ecto, "~> 3.12"},
+      {:ecto_sql, "~> 3.12"},
+      {:postgrex, "~> 0.19"},
+      {:oban, "~> 2.19"},
       {:dotenv, "~> 3.0", only: [:dev, :test]},
       {:mox, "~> 1.2", only: :test},
       {:bypass, "~> 2.1", only: :test}

@@ -27,6 +27,33 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Ecto repository (defaults to the current OS user via libpq; override with
+# DATABASE_URL in runtime.exs).
+config :codeseeker, ecto_repos: [Codeseeker.Repo]
+
+config :codeseeker, Codeseeker.Repo,
+  hostname: "localhost",
+  database: "codeseeker_dev",
+  pool_size: 10,
+  queue_target: 5_000,
+  queue_interval: 1_000,
+  migration_primary_key: [id: :bigserial],
+  migration_timestamps: [type: :utc_datetime_usec]
+
+# Oban job queue (durable, Postgres-backed) with per-queue concurrency limits:
+#   - webhook:  few at a time (GitHub payload intake)
+#   - review:   global cap on concurrent DeepSeek calls -> avoids rate-limit storms
+#               (this is the key lever for the 500-PR scale; raise/lower here)
+config :oban, Oban,
+  repo: Codeseeker.Repo,
+  queues: [
+    webhook: [limit: 4],
+    review: [limit: 30]
+  ],
+  plugins: [
+    {Oban.Plugins.Pruner, max_age: 24 * 60 * 60}
+  ]
+
 # Files that are never reviewed, whatever their size.
 # Patterns are strings (compiled at runtime) so releases can serialize them
 # on every supported Elixir version.

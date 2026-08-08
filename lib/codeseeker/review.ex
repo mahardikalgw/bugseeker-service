@@ -48,7 +48,8 @@ defmodule Codeseeker.Review do
       inline_candidates
       |> Enum.group_by(& &1.file_path)
       |> Enum.reduce({[], []}, fn {path, file_issues}, {inline, demoted} ->
-        ranges = Hunk.new_line_ranges(Map.get(patches, path))
+        patch = Map.get(patches, path)
+        ranges = if is_binary(patch), do: Hunk.new_line_ranges(patch), else: nil
         {ok, bad} = Enum.split_with(file_issues, &valid_line?(&1, ranges))
         {ok ++ inline, bad ++ demoted}
       end)
@@ -61,6 +62,11 @@ defmodule Codeseeker.Review do
       demoted: demoted
     }
   end
+
+  # When `ranges` is nil we have no patch for the file (the Oban pipeline does
+  # not persist patches), so we defer to GitHub's authoritative validation and
+  # treat the line as valid; the 422 fallback demotes invalid ones.
+  defp valid_line?(%Issue{line: line}, nil) when is_integer(line), do: true
 
   defp valid_line?(%Issue{line: line}, ranges) when is_integer(line),
     do: Hunk.line_in_ranges?(line, ranges)
@@ -111,11 +117,18 @@ defmodule Codeseeker.Review do
         "\n### Notes\n" <> Enum.join(notes, "\n")
       end
 
-    """
-    ## 🤖 Codeseeker Review — PR ##{pr.pr_number}
-    Automatic review#{if skills == "", do: "", else: " (skills: #{skills})"} on `#{String.slice(pr.head_sha, 0..7)}`.
+    header =
+      """
+      ## 🤖 Codeseeker Review — PR ##{pr.pr_number}
+      Automatic review#{if skills == "", do: "", else: " (skills: #{skills})"} on `#{String.slice(pr.head_sha, 0..7)}`.
 
-    """ <>
-      file_sections <> notes_section
+      """
+
+    if file_sections == "" and notes_section == "" do
+      # Nothing to report: let the caller post a short "no issues" body.
+      ""
+    else
+      header <> file_sections <> notes_section
+    end
   end
 end
