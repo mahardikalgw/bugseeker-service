@@ -14,8 +14,10 @@ config :phoenix, :plug_init_mode, :runtime
 config :bugseeker, Bugseeker.Repo,
   hostname: "localhost",
   database: "bugseeker_test",
-  # Local dev Postgres trusts password-less connections; the CI postgres
-  # service requires one. PGPASSWORD lets CI inject it without editing config.
+  # Local dev Postgres trusts password-less connections as the OS user; the CI
+  # postgres service creates user "postgres" with a password. PGUSER/PGPASSWORD
+  # let CI inject them without editing config.
+  username: System.get_env("PGUSER"),
   password: System.get_env("PGPASSWORD"),
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 10

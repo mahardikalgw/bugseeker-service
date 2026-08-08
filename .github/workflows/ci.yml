@@ -49,6 +49,7 @@ jobs:
 
       - name: Run tests
         env:
+          PGUSER: postgres
           PGPASSWORD: postgres
         run: mix test
 
