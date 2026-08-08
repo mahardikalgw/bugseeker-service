@@ -1,11 +1,11 @@
 defmodule Codeseeker.Jobs.FetchDiffJob do
   @moduledoc """
   Intake for a PR: creates an idempotent review run, fetches the diff,
-  filters files, stores the repo guidelines, and enqueues one
-  `ReviewFileJob` per file.
+  filters files, stores the repo guidelines + kept files, and enqueues one
+  `AgentJob` per review agent (Bug, Security, Performance, ...).
 
-  The last file to finish enqueues `AggregateReviewJob` (completion is
-  tracked with a row-locked counter, since Oban 2.23 removed `Oban.Batch`).
+  The last agent to finish enqueues `AggregateReviewJob` (completion is
+  tracked with a row-locked counter).
 
   Queue: `webhook` (low concurrency — GitHub payload intake).
   """
@@ -15,7 +15,6 @@ defmodule Codeseeker.Jobs.FetchDiffJob do
   require Logger
 
   alias Codeseeker.{Clients, Exclusions, PerRepo, Reviews}
-  alias Codeseeker.Jobs.ReviewFileJob
 
   @impl true
   def perform(%Oban.Job{args: args}) do
@@ -44,23 +43,26 @@ defmodule Codeseeker.Jobs.FetchDiffJob do
         if kept == [] do
           Reviews.finalize(pr_review, "completed")
           Logger.info("fetch_diff nothing to review", pr: pr_number, skipped: length(skipped))
-          {:ok, %{files: 0}}
+          {:ok, %{agents: 0}}
         else
           guidelines = fetch_guidelines(repo, base_sha)
           Reviews.store_guidelines(pr_review, guidelines)
+          Reviews.store_files(pr_review, kept)
           Reviews.mark_processing(pr_review)
-          Reviews.set_total_files(pr_review, length(kept))
 
-          enqueue_review_jobs(pr_review, kept)
+          agents = Codeseeker.Agents.Cache.all_names()
+          Reviews.set_total_files(pr_review, length(agents))
+          enqueue_agent_jobs(pr_review, agents)
 
-          Logger.info("fetch_diff enqueued review",
+          Logger.info("fetch_diff enqueued agents",
             pr: pr_number,
             pr_review_id: pr_review.id,
             files: length(kept),
+            agents: length(agents),
             skipped: length(skipped)
           )
 
-          {:ok, %{files: length(kept)}}
+          {:ok, %{agents: length(agents)}}
         end
 
       {:error, reason} ->
@@ -85,8 +87,12 @@ defmodule Codeseeker.Jobs.FetchDiffJob do
     end
   end
 
-  defp enqueue_review_jobs(pr_review, kept) do
-    jobs = Enum.map(kept, &ReviewFileJob.new(%{"pr_review_id" => pr_review.id, "file" => &1}))
+  defp enqueue_agent_jobs(pr_review, agents) do
+    jobs =
+      Enum.map(agents, fn agent ->
+        Codeseeker.Jobs.AgentJob.new(%{"pr_review_id" => pr_review.id, "agent" => agent})
+      end)
+
     Oban.insert_all(jobs)
   end
 

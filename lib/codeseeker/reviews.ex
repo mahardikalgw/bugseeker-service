@@ -51,6 +51,27 @@ defmodule Codeseeker.Reviews do
     Repo.update(Ecto.Changeset.change(pr_review, guidelines: guidelines))
   end
 
+  @doc """
+  Stores the kept files (path + patch) that the agents will review, so each
+  agent job reads the full diff from the run instead of duplicating it.
+  """
+  @spec store_files(PrReview.t(), [map()]) :: {:ok, PrReview.t()} | {:error, term()}
+  def store_files(pr_review, files) do
+    normalized =
+      Enum.map(files, fn f ->
+        %{
+          "path" => Map.get(f, :path) || f["path"],
+          "patch" => Map.get(f, :patch) || f["patch"],
+          "additions" => Map.get(f, :additions) || f["additions"] || 0,
+          "deletions" => Map.get(f, :deletions) || f["deletions"] || 0,
+          "status" => Map.get(f, :status) || f["status"] || "modified",
+          "sha" => Map.get(f, :sha) || f["sha"]
+        }
+      end)
+
+    Repo.update(Ecto.Changeset.change(pr_review, files: normalized))
+  end
+
   @doc "Records the number of files to review for a run."
   @spec set_total_files(PrReview.t(), non_neg_integer()) :: {:ok, PrReview.t()} | {:error, term()}
   def set_total_files(pr_review, total) do

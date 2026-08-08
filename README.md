@@ -3,15 +3,16 @@
 > Internal tool: GitHub PR automated review powered by DeepSeek, written in Elixir (Phoenix + PostgreSQL + Oban).
 
 Every `pull_request` `opened`/`synchronize` webhook triggers a review pipeline:
-fetch diff → filter files → per-file DeepSeek review using **README-style skill files** (`skills/*/README.md`) → CRITICAL/HIGH issues as inline comments, the rest in a summary review.
+fetch diff → filter files → **fan out to review agents** (Bug, Security, Performance, ...) → aggregate all issues into a GitHub review (CRITICAL/HIGH as inline comments, the rest in a summary).
 
 ## Architecture at a glance
 
+- **PR Analyzer** (`FetchDiffJob`) fetches the diff, filters files, stores the kept files + repo guidelines, and enqueues one `AgentJob` per review agent.
+- **Review agents** (`AgentJob` × N, `review` queue): each agent reviews the **whole PR diff** with its own focused prompt (persona + rules + severity bias from `agents/*.md`). Agents are cross-language dimensions, applied per PR rather than per file — so a PR gets Bug, Security, Performance, Code Quality, Architecture, Maintainability, Testing, Dependency, and API/Contract coverage.
 - **Durable queue (Oban + PostgreSQL)**: webhooks are enqueued and processed reliably. Nothing is lost on restart — the whole 500-PR backlog survives a restart.
 - **Idempotency**: a review run is keyed by `(github_repo_id, pr_number, head_sha)` with a DB unique constraint, so GitHub webhook redelivery never duplicates work.
-- **Rate limiting for scale**: Oban's `review` queue is capped at `limit: 30` — that is the **global ceiling on concurrent DeepSeek calls**. Hundreds of PRs can be accepted at once; files are processed 30-at-a-time without rate-limit storms.
-- **Pipeline**: `FetchDiffJob` (intake) → `ReviewFileJob` × N (one per file) → `AggregateReviewJob` (posts the review when the last file finishes, via a row-locked completion counter).
-- **Skills**: Markdown files in `skills/` that the bot reads and tells the LLM to follow. Extension → skill mapping in `config/config.exs` (`:skills_manifest`).
+- **Rate limiting for scale**: the `review` queue is capped at `limit: 30` — that is the **global ceiling on concurrent DeepSeek calls** across all agents and PRs. Hundreds of PRs can be accepted at once; agent jobs run 30-at-a-time without rate-limit storms.
+- **Aggregator** (`AggregateReviewJob`): runs when the last agent finishes (row-locked completion counter), splits issues inline vs summary, and posts the GitHub review.
 
 ## Local development
 
@@ -53,21 +54,26 @@ and open a test PR — watch `mix phx.server` logs for `fetch_diff enqueued revi
 3. Configure the environment (see `.env.example`):
    - `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY_PATH`, `GITHUB_WEBHOOK_SECRET`, `DEEPSEEK_API_KEY`.
 
-## Skills (README-style)
+## Review agents (README-style)
 
-Skills live in `skills/<name>/README.md`. The bot includes a skill's content verbatim in the prompt
-for files matching its extensions. Optional `## Severity` section:
+Each review agent lives in `agents/<name>.md` and is a focused reviewer persona
+(Bug, Security, Performance, Code Quality, Architecture, Maintainability,
+Testing, Dependency, API/Contract). The bot includes the agent's content
+verbatim in the prompt. Optional `## Severity` section:
 
 ```markdown
 ## Severity
-- xss: CRITICAL
+- sql injection: CRITICAL
 ```
 
 raises reported issues whose message matches the key to that severity.
 
-**Adding a skill**: add `skills/<name>/README.md`, add its extensions to `:skills_manifest`, restart.
+**Adding an agent**: add `agents/<name>.md`, restart. Every PR is reviewed by
+all configured agents (`config :codeseeker, :agents_dir`).
 
-Available skills: `generic` (fallback), `typescript`, `go`, `php`, `elixir`.
+Agents are cross-language and review the whole PR diff. A separate language
+`skills/` system (per-file) is also bundled and can be enabled later; agents
+are the active path.
 
 ## Per-repo configuration
 

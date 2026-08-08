@@ -4,13 +4,12 @@ defmodule Codeseeker.Jobs.FetchDiffJobTest do
   import Mox
 
   alias Codeseeker.Github.Client.Mock, as: GithubMock
+  alias Codeseeker.Jobs.AgentJob
   alias Codeseeker.Jobs.FetchDiffJob
   alias Codeseeker.Reviews
 
-  setup do
-    # No Oban cron/duplicate checks; each test uses a unique head_sha.
-    :ok
-  end
+  @agents Codeseeker.Agents.Cache.all_names()
+  @agent_count length(@agents)
 
   defp args(head_sha) do
     %{
@@ -37,7 +36,7 @@ defmodule Codeseeker.Jobs.FetchDiffJobTest do
     }
   end
 
-  test "happy path: creates a run, stores guidelines, enqueues one job per file" do
+  test "happy path: stores guidelines + files, enqueues one AgentJob per agent" do
     expect(GithubMock, :list_pr_files, fn _repo, 12 ->
       {:ok, [ts_file(), %{ts_file() | path: "main.go"}]}
     end)
@@ -47,18 +46,19 @@ defmodule Codeseeker.Jobs.FetchDiffJobTest do
     end)
 
     sha = unique_sha("head")
-    assert {:ok, %{files: 2}} = perform(FetchDiffJob, args(sha))
+    assert {:ok, %{agents: @agent_count}} = perform(FetchDiffJob, args(sha))
 
     pr = Reviews.find_pr_review(100, 12, sha)
     assert pr.status == "processing"
-    assert pr.total_files == 2
+    assert pr.total_files == @agent_count
     assert pr.guidelines == "Always use transactions."
+    assert pr.files |> length() == 2
+    assert Enum.map(pr.files, & &1["path"]) == ["src/api.ts", "main.go"]
 
-    enqueued = enqueued(Codeseeker.Jobs.ReviewFileJob)
-    assert length(enqueued) == 2
+    assert length(enqueued(AgentJob)) == @agent_count
   end
 
-  test "no patchable files -> finalizes completed without enqueueing reviews" do
+  test "no patchable files -> finalizes completed without enqueueing agents" do
     expect(GithubMock, :list_pr_files, fn _repo, 12 ->
       {:ok,
        [
@@ -74,11 +74,11 @@ defmodule Codeseeker.Jobs.FetchDiffJobTest do
     end)
 
     sha = unique_sha("head")
-    assert {:ok, %{files: 0}} = perform(FetchDiffJob, args(sha))
+    assert {:ok, %{agents: 0}} = perform(FetchDiffJob, args(sha))
 
     pr = Reviews.find_pr_review(100, 12, sha)
     assert pr.status == "completed"
-    assert enqueued(Codeseeker.Jobs.ReviewFileJob) == []
+    assert enqueued(AgentJob) == []
   end
 
   test "repo disabled -> discarded, nothing enqueued" do
@@ -98,7 +98,7 @@ defmodule Codeseeker.Jobs.FetchDiffJobTest do
     }
 
     assert perform(FetchDiffJob, args) == :discard
-    assert enqueued(Codeseeker.Jobs.ReviewFileJob) == []
+    assert enqueued(AgentJob) == []
   end
 
   test "redelivery of the same head_sha is discarded (idempotent)" do
@@ -110,7 +110,7 @@ defmodule Codeseeker.Jobs.FetchDiffJobTest do
     assert {:ok, _} = perform(FetchDiffJob, args(sha))
     # GitHub redelivers the same webhook:
     assert perform(FetchDiffJob, args(sha)) == :discard
-    assert length(enqueued(Codeseeker.Jobs.ReviewFileJob)) == 1
+    assert length(enqueued(AgentJob)) == @agent_count
   end
 
   test "github list error raises so Oban retries" do

@@ -96,6 +96,9 @@ config :codeseeker, :skills_manifest, %{
 config :codeseeker, :skills_dir, "skills"
 config :codeseeker, :fallback_skill, "generic"
 
+# Cross-language review agents (each reviews the whole PR diff).
+config :codeseeker, :agents_dir, "agents"
+
 # DeepSeek LLM settings
 config :codeseeker, :llm, %{
   temperature: 0.1,

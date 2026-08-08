@@ -46,10 +46,18 @@ defmodule Codeseeker.RepoCase do
       files_reviewed: 0
     }
 
-    {:ok, pr_review} =
-      Codeseeker.Reviews.create_pr_review(Map.merge(defaults, Map.new(attrs)))
+    attrs = Map.merge(defaults, Map.new(attrs))
+    files = Map.get(attrs, :files)
+    attrs = Map.delete(attrs, :files)
 
-    pr_review
+    {:ok, created} = Codeseeker.Reviews.create_pr_review(attrs)
+
+    if files do
+      {:ok, stored} = Codeseeker.Reviews.store_files(created, files)
+      stored
+    else
+      created
+    end
   end
 
   @doc "Performs a job for `worker` with `args`, returning its result."

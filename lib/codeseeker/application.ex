@@ -8,6 +8,7 @@ defmodule Codeseeker.Application do
     children = [
       Codeseeker.Repo,
       Codeseeker.Skills.Cache,
+      Codeseeker.Agents.Cache,
       Codeseeker.PerRepo,
       Codeseeker.Github.AppAuth,
       Codeseeker.Stats,

@@ -21,6 +21,7 @@ defmodule Codeseeker.Reviews.PrReview do
     field(:base_sha, :string)
     field(:status, :string, default: "pending")
     field(:guidelines, :string)
+    field(:files, {:array, :map})
     field(:total_files, :integer, default: 0)
     field(:files_reviewed, :integer, default: 0)
 
@@ -42,6 +43,7 @@ defmodule Codeseeker.Reviews.PrReview do
       :base_sha,
       :status,
       :guidelines,
+      :files,
       :total_files,
       :files_reviewed
     ])

@@ -38,11 +38,17 @@ defmodule Codeseeker.Llm.Parser do
 
   def parse(_content, _file_path, _skill), do: {:error, :unparseable}
 
-  defp parse_issue(%{"message" => message} = raw, file_path, skill) do
+  defp parse_issue(%{"message" => message} = raw, default_file_path, skill) do
     severity = raw |> Map.get("severity") |> normalize_enum(&Issue.valid_severity?/1, :severity)
     category = raw |> Map.get("category") |> normalize_enum(&Issue.valid_category?/1, :category)
 
-    if severity && category do
+    file_path =
+      case raw["file_path"] do
+        fp when is_binary(fp) and fp != "" -> fp
+        _ -> default_file_path
+      end
+
+    if severity && category && file_path do
       line =
         case raw["line"] do
           line when is_integer(line) and line > 0 -> line
