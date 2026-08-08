@@ -1,5 +1,9 @@
 # Codeseeker — AI Code Review Bot
 
+<p align="center">
+  <img src="https://ih1.redbubble.net/image.613528364.8220/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.u1.jpg" alt="Codeseeker" width="300">
+</p>
+
 > Internal tool: GitHub PR automated review powered by DeepSeek, written in Elixir (Phoenix + PostgreSQL + Oban).
 
 Every `pull_request` `opened`/`synchronize` webhook triggers a review pipeline:
