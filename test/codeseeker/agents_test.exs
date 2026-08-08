@@ -110,6 +110,12 @@ defmodule Codeseeker.AgentsTest do
       assert "typescript_performance" in names
       assert "typescript_code_quality" in names
       assert "typescript_testing" in names
+
+      assert "nestjs_architecture" in names
+      assert "nestjs_security" in names
+      assert "nestjs_performance" in names
+      assert "nestjs_code_quality" in names
+      assert "nestjs_testing" in names
     end
 
     test "framework-specific agents declare their file types" do
