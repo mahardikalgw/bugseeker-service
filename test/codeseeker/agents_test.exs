@@ -104,12 +104,23 @@ defmodule Codeseeker.AgentsTest do
       assert "react_js_performance" in names
       assert "react_js_code_quality" in names
       assert "react_js_testing" in names
+
+      assert "typescript_architecture" in names
+      assert "typescript_security" in names
+      assert "typescript_performance" in names
+      assert "typescript_code_quality" in names
+      assert "typescript_testing" in names
     end
 
     test "framework-specific agents declare their file types" do
       agent = Cache.get("react_js_security")
       assert ".tsx" in agent.file_extensions
       assert ".ts" in agent.file_extensions
+
+      ts = Cache.get("typescript_security")
+      assert ".ts" in ts.file_extensions
+      assert ".tsx" in ts.file_extensions
+      assert ".js" in ts.file_extensions
     end
   end
 end
