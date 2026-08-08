@@ -12,7 +12,6 @@ COPY config ./config
 RUN mix deps.get --only prod && mix deps.compile
 
 COPY lib ./lib
-COPY skills ./skills
 COPY priv ./priv
 COPY .formatter.exs ./
 

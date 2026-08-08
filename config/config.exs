@@ -79,8 +79,9 @@ config :codeseeker, :exclusions, %{
   binary_markers: ["Binary files differ", <<0>>]
 }
 
-# Cross-language review agents (each reviews the whole PR diff).
-config :codeseeker, :agents_dir, "agents"
+# Cross-language review agents (each reviews the whole PR diff). Lives under
+# priv/ so releases bundle it automatically.
+config :codeseeker, :agents_dir, "priv/agents"
 
 # DeepSeek LLM settings
 config :codeseeker, :llm, %{

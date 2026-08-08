@@ -40,14 +40,17 @@ defmodule Codeseeker.Agents.Cache do
   def handle_call(:all, _from, state), do: {:reply, state, state}
 
   defp load do
-    dir = Application.get_env(:codeseeker, :agents_dir, "agents")
+    subdir = Application.get_env(:codeseeker, :agents_dir, "priv/agents")
+    # Resolve relative to the app root so it works in dev and in releases
+    # (where priv/ is bundled).
+    dir = Application.app_dir(:codeseeker, subdir)
 
     dir
     |> Path.join("*.md")
     |> Path.wildcard()
     |> Enum.sort()
     |> Enum.reduce(%{}, fn path, acc ->
-      # Flat layout (agents/bug.md), so the name is the filename.
+      # Flat layout (bug.md), so the name is the filename.
       agent = Agent.load(path, Path.basename(path, ".md"))
       Map.put(acc, agent.name, agent)
     end)
