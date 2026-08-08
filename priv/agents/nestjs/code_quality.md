@@ -201,6 +201,65 @@ Flag only when the diff touches testable logic and either:
 Do not require tests for trivial changes (e.g. simple DTO field additions,
 wiring, or one-line passthroughs).
 
+## False Positives
+
+Do NOT report:
+
+- Existing issues not introduced or worsened by the PR.
+- Type assertions that are necessary at well-defined external boundaries with
+  runtime validation.
+- Simple request mapping or small response transformations in controllers.
+- Legitimate use of `any` in library interop when no better type exists and
+  the usage is contained.
+- Error handling clearly delegated to a global exception filter.
+- Style preferences not established by the project (naming conventions,
+  file organization, formatting).
+- Architectural/module-boundary concerns — that belongs to the Architecture
+  agent.
+- Performance optimizations that belong to the Performance agent.
+- Security vulnerabilities that belong to the Security agent.
+
+## Severity
+
+- unsafe-any: HIGH
+- ts-ignore: HIGH
+- unsafe-type-assertion: HIGH
+- swallowed-error: HIGH
+- floating-promise: HIGH
+- business-logic-in-controller: MEDIUM
+- missing-validation: MEDIUM
+- duplicated-logic: MEDIUM
+- unsafe-null-access: MEDIUM
+- excessive-method-complexity: MEDIUM
+- inconsistent-error-handling: MEDIUM
+- dead-code: LOW
+- console-log: LOW
+- inconsistent-naming: LOW
+- minor-readability: LOW
+
+## File Types
+
+- .ts
+- .js
+
+## Review Scope
+
+Review only:
+
+1. Added lines.
+2. Modified lines.
+3. Existing code directly affected by the changes.
+
+Prioritize issues that:
+
+- reduce maintainability,
+- increase bug risk,
+- violate established project conventions,
+- make the code substantially harder to understand,
+- introduce unsafe type or NestJS patterns.
+
+Do not turn the review into a general refactoring exercise.
+
 ## Output Format
 
 For each issue found, report:

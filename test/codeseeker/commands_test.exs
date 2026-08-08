@@ -26,14 +26,14 @@ defmodule Codeseeker.CommandsTest do
       Commands.run(%{
         repo: repo(),
         pr_number: 1,
-        comment: "/codeseeker enable-agent security",
+        comment: "/codeseeker enable-agent typescript_security",
         user: "dev"
       })
 
       assert_receive {:reply, body}, 1_000
       assert body =~ "@dev "
-      assert body =~ "Agent `security` is now **enabled**"
-      assert "security" in Codeseeker.PerRepo.active_agent_names(repo())
+      assert body =~ "Agent `typescript_security` is now **enabled**"
+      assert "typescript_security" in Codeseeker.PerRepo.active_agent_names(repo())
     end
 
     test "disable-agent disables a valid agent" do
@@ -44,18 +44,18 @@ defmodule Codeseeker.CommandsTest do
         {:ok, %{}}
       end)
 
-      Codeseeker.PerRepo.enable_agent(repo(), "security")
+      Codeseeker.PerRepo.enable_agent(repo(), "typescript_security")
 
       Commands.run(%{
         repo: repo(),
         pr_number: 1,
-        comment: "/codeseeker disable-agent security",
+        comment: "/codeseeker disable-agent typescript_security",
         user: "dev"
       })
 
       assert_receive {:reply, body}, 1_000
-      assert body =~ "Agent `security` is now **disabled**"
-      refute "security" in Codeseeker.PerRepo.active_agent_names(repo())
+      assert body =~ "Agent `typescript_security` is now **disabled**"
+      refute "typescript_security" in Codeseeker.PerRepo.active_agent_names(repo())
     end
 
     test "unknown agent lists available agents" do
@@ -75,7 +75,7 @@ defmodule Codeseeker.CommandsTest do
 
       assert_receive {:reply, body}, 1_000
       assert body =~ "Unknown agent `cobol`"
-      assert body =~ "security"
+      assert body =~ "typescript_security"
     end
 
     test "status reports enabled state, agents and threshold" do

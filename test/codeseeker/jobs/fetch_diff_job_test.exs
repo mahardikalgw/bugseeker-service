@@ -41,8 +41,11 @@ defmodule Codeseeker.Jobs.FetchDiffJobTest do
       {:ok, [ts_file(), %{ts_file() | path: "main.go"}]}
     end)
 
-    expect(GithubMock, :get_raw_contents, fn _repo, _path, _ref ->
-      {:ok, "Always use transactions."}
+    stub(GithubMock, :get_raw_contents, fn _repo, path, _ref ->
+      case path do
+        "docs/engineering-guidelines.md" -> {:ok, "Always use transactions."}
+        _ -> {:error, :not_found}
+      end
     end)
 
     sha = unique_sha("head")
@@ -101,9 +104,48 @@ defmodule Codeseeker.Jobs.FetchDiffJobTest do
     assert enqueued(AgentJob) == []
   end
 
+  test "repo .codeseeker.yml agents override PerRepo defaults" do
+    expect(GithubMock, :list_pr_files, fn _repo, 12 -> {:ok, [ts_file()]} end)
+
+    stub(GithubMock, :get_raw_contents, fn _repo, path, _ref ->
+      case path do
+        ".codeseeker.yml" -> {:ok, "agents:\n  - nestjs_security\n"}
+        _ -> {:error, :not_found}
+      end
+    end)
+
+    sha = unique_sha("head")
+    assert {:ok, %{agents: 1}} = perform(FetchDiffJob, args(sha))
+
+    enqueued_agents =
+      enqueued(AgentJob) |> Enum.map(& &1.args["agent"]) |> Enum.sort()
+
+    assert enqueued_agents == ["nestjs_security"]
+
+    pr = Reviews.find_pr_review(100, 12, sha)
+    assert pr.total_files == 1
+  end
+
+  test "repo .codeseeker.yml min_inline_severity is stored on the run" do
+    expect(GithubMock, :list_pr_files, fn _repo, 12 -> {:ok, [ts_file()]} end)
+
+    stub(GithubMock, :get_raw_contents, fn _repo, path, _ref ->
+      case path do
+        ".codeseeker.yml" -> {:ok, "min_inline_severity: critical\n"}
+        _ -> {:error, :not_found}
+      end
+    end)
+
+    sha = unique_sha("head")
+    assert {:ok, %{agents: @agent_count}} = perform(FetchDiffJob, args(sha))
+
+    pr = Reviews.find_pr_review(100, 12, sha)
+    assert pr.min_inline_severity == "CRITICAL"
+  end
+
   test "redelivery of the same head_sha is discarded (idempotent)" do
     expect(GithubMock, :list_pr_files, fn _repo, 12 -> {:ok, [ts_file()]} end)
-    expect(GithubMock, :get_raw_contents, fn _repo, _path, _ref -> {:error, :not_found} end)
+    stub(GithubMock, :get_raw_contents, fn _repo, _path, _ref -> {:error, :not_found} end)
 
     sha = unique_sha("head")
 

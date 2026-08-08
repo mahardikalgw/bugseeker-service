@@ -72,6 +72,15 @@ defmodule Codeseeker.Reviews do
     Repo.update(Ecto.Changeset.change(pr_review, files: normalized))
   end
 
+  @doc "Stores the inline-severity threshold resolved for this run, if overridden."
+  @spec store_min_inline_severity(PrReview.t(), String.t() | nil) ::
+          {:ok, PrReview.t()} | {:error, term()}
+  def store_min_inline_severity(pr_review, nil), do: {:ok, pr_review}
+
+  def store_min_inline_severity(pr_review, severity) do
+    Repo.update(Ecto.Changeset.change(pr_review, min_inline_severity: severity))
+  end
+
   @doc "Records the number of files to review for a run."
   @spec set_total_files(PrReview.t(), non_neg_integer()) :: {:ok, PrReview.t()} | {:error, term()}
   def set_total_files(pr_review, total) do

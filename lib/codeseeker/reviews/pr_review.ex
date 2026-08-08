@@ -24,6 +24,7 @@ defmodule Codeseeker.Reviews.PrReview do
     field(:files, {:array, :map})
     field(:total_files, :integer, default: 0)
     field(:files_reviewed, :integer, default: 0)
+    field(:min_inline_severity, :string)
 
     has_many(:issues, Codeseeker.Reviews.ReviewIssue, on_replace: :delete)
 
@@ -45,7 +46,8 @@ defmodule Codeseeker.Reviews.PrReview do
       :guidelines,
       :files,
       :total_files,
-      :files_reviewed
+      :files_reviewed,
+      :min_inline_severity
     ])
     |> validate_required([
       :github_repo_id,

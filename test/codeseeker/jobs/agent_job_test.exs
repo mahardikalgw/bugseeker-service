@@ -33,8 +33,8 @@ defmodule Codeseeker.Jobs.AgentJobTest do
     pr_review = pr_review()
 
     expect(LlmMock, :chat, fn prompt ->
-      assert prompt =~ "## AGENT: security"
-      assert prompt =~ "# Agent: Security"
+      assert prompt =~ "## AGENT: react_js_security"
+      assert prompt =~ "# Agent: React JS / Security"
       assert prompt =~ "src/api.ts"
 
       {:ok,
@@ -45,12 +45,12 @@ defmodule Codeseeker.Jobs.AgentJobTest do
     end)
 
     assert {:ok, %{issues: 1}} =
-             perform(AgentJob, %{"pr_review_id" => pr_review.id, "agent" => "security"})
+             perform(AgentJob, %{"pr_review_id" => pr_review.id, "agent" => "react_js_security"})
 
     assert [issue] = Reviews.issues_for(pr_review)
     assert issue.file_path == "src/api.ts"
     assert issue.severity == "CRITICAL"
-    assert issue.agent == "security"
+    assert issue.agent == "react_js_security"
   end
 
   test "includes repo guidelines in the agent prompt when present" do
@@ -63,7 +63,7 @@ defmodule Codeseeker.Jobs.AgentJobTest do
     end)
 
     assert {:ok, %{issues: 0}} =
-             perform(AgentJob, %{"pr_review_id" => pr_review.id, "agent" => "bug"})
+             perform(AgentJob, %{"pr_review_id" => pr_review.id, "agent" => "react_js_security"})
   end
 
   test "unparseable LLM output is skipped without retrying" do
@@ -72,7 +72,7 @@ defmodule Codeseeker.Jobs.AgentJobTest do
     expect(LlmMock, :chat, fn _ -> {:ok, %{content: "not json at all"}} end)
 
     assert {:ok, %{issues: 0, skipped: true}} =
-             perform(AgentJob, %{"pr_review_id" => pr_review.id, "agent" => "bug"})
+             perform(AgentJob, %{"pr_review_id" => pr_review.id, "agent" => "react_js_security"})
   end
 
   test "LLM error returns {:error} for Oban retry (not counted as done)" do
@@ -81,7 +81,7 @@ defmodule Codeseeker.Jobs.AgentJobTest do
     expect(LlmMock, :chat, fn _ -> {:error, %{type: :rate_limited, message: "slow down"}} end)
 
     assert {:error, %{type: :rate_limited}} =
-             perform(AgentJob, %{"pr_review_id" => pr_review.id, "agent" => "bug"})
+             perform(AgentJob, %{"pr_review_id" => pr_review.id, "agent" => "react_js_security"})
 
     pr = Repo.get(Codeseeker.Reviews.PrReview, pr_review.id)
     assert pr.files_reviewed == 0
@@ -92,7 +92,8 @@ defmodule Codeseeker.Jobs.AgentJobTest do
 
     expect(LlmMock, :chat, fn _ -> {:ok, %{content: ~s({"issues":[]})}} end)
 
-    assert {:ok, _} = perform(AgentJob, %{"pr_review_id" => pr_review.id, "agent" => "bug"})
+    assert {:ok, _} =
+             perform(AgentJob, %{"pr_review_id" => pr_review.id, "agent" => "react_js_security"})
 
     assert [%Oban.Job{worker: "Codeseeker.Jobs.AggregateReviewJob"}] =
              enqueued(Codeseeker.Jobs.AggregateReviewJob)
@@ -103,21 +104,19 @@ defmodule Codeseeker.Jobs.AgentJobTest do
 
     expect(LlmMock, :chat, fn _ -> {:ok, %{content: ~s({"issues":[]})}} end)
 
-    assert {:ok, _} = perform(AgentJob, %{"pr_review_id" => pr_review.id, "agent" => "bug"})
+    assert {:ok, _} =
+             perform(AgentJob, %{"pr_review_id" => pr_review.id, "agent" => "react_js_security"})
+
     assert enqueued(Codeseeker.Jobs.AggregateReviewJob) == []
   end
 
   test "all configured agents are loaded" do
     names = Cache.all_names()
-    assert "bug" in names
-    assert "security" in names
-    assert "performance" in names
-    assert "code_quality" in names
-    assert "architecture" in names
-    assert "maintainability" in names
-    assert "testing" in names
-    assert "dependency" in names
-    assert "api_contract" in names
+    assert "react_js_security" in names
+    assert "react_js_performance" in names
+    assert "react_js_code_quality" in names
+    assert "react_js_architecture" in names
+    assert "react_js_testing" in names
   end
 
   test "a framework-specific agent runs only when a matching file is present" do

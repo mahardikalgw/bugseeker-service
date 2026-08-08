@@ -91,7 +91,30 @@ per-repo overrides via `:repos` or `/codeseeker` commands).
 
 ## Per-repo configuration
 
-`config :codeseeker, :repos` in `config/config.exs`:
+### `.codeseeker.yml` (in the reviewed repo — recommended)
+
+Each repository can control its own review via a `.codeseeker.yml` (or
+`.codeseeker.yaml`) at its root. It is fetched once per review run (at the
+PR head sha), and it **wins over the service-side config**:
+
+```yaml
+# Framework bundle: all nestjs_* agents. Bare names expand to "<name>_*".
+agents:
+  - nestjs
+  - typescript
+# …or individual agents:
+# agents:
+#   - nestjs_security
+#   - react_js_testing
+
+# Issues ≥ this severity become inline comments (default: service setting).
+min_inline_severity: HIGH
+```
+
+Unknown agent names are ignored; a repo can never disable every agent by
+accident. Without this file, the service-side config below applies.
+
+### Service-side (`config :codeseeker, :repos` in `config/config.exs`)
 
 ```elixir
 config :codeseeker, :repos, %{

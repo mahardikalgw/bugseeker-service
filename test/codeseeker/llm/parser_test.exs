@@ -5,7 +5,7 @@ defmodule Codeseeker.Llm.ParserTest do
   alias Codeseeker.Llm.Parser
   alias Codeseeker.Reviews.Issue
 
-  defp agent, do: Cache.get("security")
+  defp agent, do: Cache.get("typescript_security")
 
   describe "parse/3" do
     test "parses valid issues" do
@@ -18,7 +18,7 @@ defmodule Codeseeker.Llm.ParserTest do
                issue
 
       assert issue.recommendation == "Use parameters"
-      assert issue.agent == "security"
+      assert issue.agent == "typescript_security"
     end
 
     test "uses the default file_path when an item has none" do
@@ -60,9 +60,9 @@ defmodule Codeseeker.Llm.ParserTest do
 
     test "applies severity bias from the agent" do
       content =
-        ~s({"issues":[{"file_path":"a.ts","line":1,"severity":"MEDIUM","category":"security","message":"SQL injection from user input"}]})
+        ~s({"issues":[{"file_path":"a.ts","line":1,"severity":"MEDIUM","category":"security","message":"potential eval-injection from user input"}]})
 
-      assert {:ok, [%Issue{severity: "CRITICAL"}]} = Parser.parse(content, nil, agent())
+      assert {:ok, [%{severity: "CRITICAL"}]} = Parser.parse(content, nil, agent())
     end
 
     test "returns unparseable for invalid JSON" do

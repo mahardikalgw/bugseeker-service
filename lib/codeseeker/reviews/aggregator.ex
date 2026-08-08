@@ -39,7 +39,10 @@ defmodule Codeseeker.Reviews.Aggregator do
         ) ::
           aggregate_result()
   def aggregate(issues, patches, skipped, warnings, pr) do
-    min_severity = PerRepo.min_inline_severity(pr.repo)
+    # `pr.min_inline_severity` is set from the repo's own `.codeseeker.yml`
+    # at intake; it wins over the PerRepo override/global default.
+    min_severity =
+      Map.get(pr, :min_inline_severity) || PerRepo.min_inline_severity(pr.repo)
 
     {inline_candidates, summary_issues} =
       Enum.split_with(issues, &Issue.severity_at_least?(&1, min_severity))

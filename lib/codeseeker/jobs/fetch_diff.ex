@@ -14,7 +14,7 @@ defmodule Codeseeker.Jobs.FetchDiffJob do
 
   require Logger
 
-  alias Codeseeker.{Clients, Exclusions, PerRepo, Reviews}
+  alias Codeseeker.{Clients, Exclusions, PerRepo, RepoConfig, Reviews}
 
   @impl true
   def perform(%Oban.Job{args: args}) do
@@ -30,12 +30,12 @@ defmodule Codeseeker.Jobs.FetchDiffJob do
           :discard
 
         {:ok, pr_review} ->
-          process(pr_review, repo, pr_number, args["base_sha"])
+          process(pr_review, repo, pr_number, args["base_sha"], args["head_sha"])
       end
     end
   end
 
-  defp process(pr_review, repo, pr_number, base_sha) do
+  defp process(pr_review, repo, pr_number, base_sha, head_sha) do
     case Clients.github().list_pr_files(repo, pr_number) do
       {:ok, files} ->
         {kept, skipped} = Exclusions.filter(files)
@@ -50,7 +50,14 @@ defmodule Codeseeker.Jobs.FetchDiffJob do
           Reviews.store_files(pr_review, kept)
           Reviews.mark_processing(pr_review)
 
-          agents = PerRepo.active_agent_names(repo)
+          repo_config = RepoConfig.fetch(repo, head_sha)
+          agents = active_agents(repo, repo_config)
+
+          Reviews.store_min_inline_severity(
+            pr_review,
+            repo_config && repo_config[:min_inline_severity]
+          )
+
           Reviews.set_total_files(pr_review, length(agents))
           enqueue_agent_jobs(pr_review, agents)
 
@@ -68,6 +75,15 @@ defmodule Codeseeker.Jobs.FetchDiffJob do
       {:error, reason} ->
         # Raise so Oban retries with backoff.
         raise "list_pr_files failed: #{inspect(reason)}"
+    end
+  end
+
+  # The repo's own `.codeseeker.yml` wins over PerRepo; without one (or
+  # without an `agents` key in it) PerRepo decides.
+  defp active_agents(repo, repo_config) do
+    case repo_config && repo_config[:agents] do
+      nil -> PerRepo.active_agent_names(repo)
+      agents -> agents
     end
   end
 

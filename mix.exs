@@ -53,6 +53,7 @@ defmodule Codeseeker.MixProject do
       {:req, "~> 0.5"},
       {:joken, "~> 2.6"},
       {:jason, "~> 1.2"},
+      {:yaml_elixir, "~> 2.11"},
       {:bandit, "~> 1.5"},
       {:ecto, "~> 3.12"},
       {:ecto_sql, "~> 3.12"},

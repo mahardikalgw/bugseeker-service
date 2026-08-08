@@ -48,7 +48,8 @@ defmodule Codeseeker.Jobs.AggregateReviewJob do
       repo: repo_map(pr_review),
       pr_number: pr_review.pr_number,
       head_sha: pr_review.head_sha,
-      agents: agents
+      agents: agents,
+      min_inline_severity: pr_review.min_inline_severity
     }
 
     # Patches are not persisted in the Oban pipeline; line validity is
