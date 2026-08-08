@@ -34,3 +34,6 @@ bugseeker-*.tar
 
 .kilo.elixir_ls/
 .elixir_ls/
+
+# Kilo agent workspace/state
+.kilo/
