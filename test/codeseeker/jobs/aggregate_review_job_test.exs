@@ -90,7 +90,7 @@ defmodule Codeseeker.Jobs.AggregateReviewJobTest do
   defp insert_issue(pr_review, attrs) do
     {:ok, _} =
       Reviews.insert_issues(pr_review, [
-        %Codeseeker.Review.Issue{
+        %Codeseeker.Reviews.Issue{
           file_path: "src/api.ts",
           severity: "CRITICAL",
           category: "security",

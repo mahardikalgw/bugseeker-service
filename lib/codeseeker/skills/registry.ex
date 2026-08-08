@@ -8,7 +8,7 @@ defmodule Codeseeker.Skills.Registry do
   """
 
   alias Codeseeker.Llm.Prompt
-  alias Codeseeker.Review.Issue
+  alias Codeseeker.Reviews.Issue
   alias Codeseeker.Skills.{Cache, Skill}
 
   @doc """

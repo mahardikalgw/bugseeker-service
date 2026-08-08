@@ -1,4 +1,4 @@
-defmodule Codeseeker.Review.Issue do
+defmodule Codeseeker.Reviews.Issue do
   @moduledoc """
   A single issue reported by the LLM for one file of a PR diff.
 

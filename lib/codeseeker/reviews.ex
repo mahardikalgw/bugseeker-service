@@ -8,7 +8,7 @@ defmodule Codeseeker.Reviews do
 
   alias Codeseeker.Repo
   alias Codeseeker.Reviews.{PrReview, ReviewIssue}
-  alias Codeseeker.Review.Issue
+  alias Codeseeker.Reviews.Issue
 
   @doc """
   Creates a review run for a PR at `head_sha`. Returns `{:error, :duplicate}`

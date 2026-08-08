@@ -1,4 +1,4 @@
-defmodule Codeseeker.Review do
+defmodule Codeseeker.Reviews.Aggregator do
   @moduledoc """
   Pure aggregation logic: splits issues into inline comments vs summary,
   validates line numbers against the diff hunks, and renders the summary
@@ -6,7 +6,7 @@ defmodule Codeseeker.Review do
   """
 
   alias Codeseeker.{Hunk, PerRepo}
-  alias Codeseeker.Review.Issue
+  alias Codeseeker.Reviews.Issue
 
   @type review_comment :: %{
           path: String.t(),

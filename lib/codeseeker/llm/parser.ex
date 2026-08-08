@@ -1,13 +1,13 @@
 defmodule Codeseeker.Llm.Parser do
   @moduledoc """
-  Parses the LLM's JSON response into a list of `Codeseeker.Review.Issue`
+  Parses the LLM's JSON response into a list of `Codeseeker.Reviews.Issue`
   structs, validating enums and applying the skill's severity bias.
 
   Pure module — the repair round-trip to DeepSeek is orchestrated by the
   caller (the coordinator's `review_file/3`).
   """
 
-  alias Codeseeker.Review.Issue
+  alias Codeseeker.Reviews.Issue
   alias Codeseeker.Skills.{Registry, Skill}
 
   @doc """

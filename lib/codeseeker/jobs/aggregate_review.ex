@@ -12,7 +12,8 @@ defmodule Codeseeker.Jobs.AggregateReviewJob do
 
   require Logger
 
-  alias Codeseeker.{Clients, Repo, Review, Reviews}
+  alias Codeseeker.{Clients, Repo, Reviews}
+  alias Codeseeker.Reviews.Aggregator, as: Review
   alias Codeseeker.Reviews.PrReview
 
   @impl true

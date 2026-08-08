@@ -2,7 +2,7 @@ defmodule Codeseeker.Llm.ParserTest do
   use ExUnit.Case, async: true
 
   alias Codeseeker.Llm.Parser
-  alias Codeseeker.Review.Issue
+  alias Codeseeker.Reviews.Issue
   alias Codeseeker.Skills.Cache
 
   defp skill, do: Cache.get("typescript")

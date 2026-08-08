@@ -1,8 +1,8 @@
-defmodule Codeseeker.ReviewTest do
+defmodule Codeseeker.Reviews.AggregatorTest do
   use ExUnit.Case, async: true
 
-  alias Codeseeker.Review
-  alias Codeseeker.Review.Issue
+  alias Codeseeker.Reviews.Aggregator, as: Review
+  alias Codeseeker.Reviews.Issue
 
   defp issue(path, line, severity, category, message) do
     %Issue{

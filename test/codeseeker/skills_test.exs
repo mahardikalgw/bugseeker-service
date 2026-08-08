@@ -68,7 +68,7 @@ defmodule Codeseeker.SkillsTest do
   end
 
   describe "Registry.apply_bias/2" do
-    alias Codeseeker.Review.Issue
+    alias Codeseeker.Reviews.Issue
 
     test "raises severity when the message matches a bias key" do
       skill = Cache.get("typescript")

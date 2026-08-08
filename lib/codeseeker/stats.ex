@@ -8,7 +8,7 @@ defmodule Codeseeker.Stats do
 
   use GenServer
 
-  alias Codeseeker.Review.Issue
+  alias Codeseeker.Reviews.Issue
 
   @table :codeseeker_stats
 
