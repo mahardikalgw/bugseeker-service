@@ -48,6 +48,8 @@ jobs:
         run: mix compile --warnings-as-errors
 
       - name: Run tests
+        env:
+          PGPASSWORD: postgres
         run: mix test
 
   docker:
