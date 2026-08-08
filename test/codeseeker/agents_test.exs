@@ -65,7 +65,7 @@ defmodule Codeseeker.AgentsTest do
   end
 
   describe "Agent.parse/1" do
-    test "strips the severity section from content" do
+    test "strips the severity and file types sections from content" do
       content = """
       # Agent: Test
 
@@ -74,14 +74,42 @@ defmodule Codeseeker.AgentsTest do
       ## Rules
       - one
 
+      ## File types
+      - .tsx
+      - .ts
+
       ## Severity
       - xss: CRITICAL
       """
 
-      {instructions, bias} = Agent.parse(content)
-      assert instructions =~ "You are a reviewer."
-      refute instructions =~ "CRITICAL"
-      assert bias == %{"xss" => "CRITICAL"}
+      parsed = Agent.parse(content)
+      assert parsed.content =~ "You are a reviewer."
+      refute parsed.content =~ "## Severity"
+      refute parsed.content =~ "## File types"
+      assert parsed.file_extensions == [".tsx", ".ts"]
+      assert parsed.severity_bias == %{"xss" => "CRITICAL"}
+    end
+
+    test "agents without file types get an empty list" do
+      assert Cache.get("security").file_extensions == []
+    end
+  end
+
+  describe "hierarchical agents" do
+    test "framework-specific agents are loaded from sub-folders" do
+      names = Cache.all_names()
+
+      assert "react_js_architecture" in names
+      assert "react_js_security" in names
+      assert "react_js_performance" in names
+      assert "react_js_code_quality" in names
+      assert "react_js_testing" in names
+    end
+
+    test "framework-specific agents declare their file types" do
+      agent = Cache.get("react_js_security")
+      assert ".tsx" in agent.file_extensions
+      assert ".ts" in agent.file_extensions
     end
   end
 end

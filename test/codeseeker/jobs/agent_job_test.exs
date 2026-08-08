@@ -119,4 +119,36 @@ defmodule Codeseeker.Jobs.AgentJobTest do
     assert "dependency" in names
     assert "api_contract" in names
   end
+
+  test "a framework-specific agent runs only when a matching file is present" do
+    # files: src/api.ts
+    pr_review = pr_review()
+
+    expect(LlmMock, :chat, fn prompt ->
+      assert prompt =~ "## AGENT: react_js_security"
+      {:ok, %{content: ~s({"issues":[]})}}
+    end)
+
+    assert {:ok, %{issues: 0}} =
+             perform(AgentJob, %{"pr_review_id" => pr_review.id, "agent" => "react_js_security"})
+  end
+
+  test "a framework-specific agent is skipped (not run) when no matching file" do
+    pr_review = pr_review(files: [%{"path" => "main.go", "patch" => "@@ -1 +1 @@"}])
+
+    # No LLM call expected — a stray call fails the test loudly.
+    assert {:ok, %{issues: 0, skipped: true}} =
+             perform(AgentJob, %{"pr_review_id" => pr_review.id, "agent" => "react_js_security"})
+  end
+
+  test "skipped specific agents still count toward completion" do
+    pr_review =
+      pr_review(total_files: 1, files: [%{"path" => "main.go", "patch" => "@@ -1 +1 @@"}])
+
+    assert {:ok, %{issues: 0, skipped: true}} =
+             perform(AgentJob, %{"pr_review_id" => pr_review.id, "agent" => "react_js_security"})
+
+    assert [%Oban.Job{worker: "Codeseeker.Jobs.AggregateReviewJob"}] =
+             enqueued(Codeseeker.Jobs.AggregateReviewJob)
+  end
 end

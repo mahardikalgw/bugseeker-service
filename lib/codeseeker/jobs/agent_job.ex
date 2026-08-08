@@ -23,24 +23,43 @@ defmodule Codeseeker.Jobs.AgentJob do
   def perform(%Oban.Job{args: %{"pr_review_id" => pr_review_id, "agent" => agent_name}} = job) do
     with %PrReview{} = pr_review <- Repo.get(PrReview, pr_review_id),
          %{name: _} = agent <- Agents.Cache.get(agent_name) do
-      result = run_agent(pr_review, agent)
-
-      case result do
-        {:ok, meta} ->
-          maybe_enqueue_aggregate(pr_review)
-          {:ok, meta}
-
-        {:error, reason} ->
-          if job.attempt >= job.max_attempts do
-            maybe_enqueue_aggregate(pr_review)
-            {:ok, %{issues: 0, skipped: true}}
-          else
-            {:error, reason}
-          end
+      if applies_to?(agent, pr_review.files) do
+        run_and_finish(pr_review, agent, job)
+      else
+        # No matching files for this specific agent — count it as done and skip.
+        maybe_enqueue_aggregate(pr_review)
+        {:ok, %{issues: 0, skipped: true}}
       end
     else
       _ -> :discard
     end
+  end
+
+  defp run_and_finish(pr_review, agent, job) do
+    result = run_agent(pr_review, agent)
+
+    case result do
+      {:ok, meta} ->
+        maybe_enqueue_aggregate(pr_review)
+        {:ok, meta}
+
+      {:error, reason} ->
+        if job.attempt >= job.max_attempts do
+          maybe_enqueue_aggregate(pr_review)
+          {:ok, %{issues: 0, skipped: true}}
+        else
+          {:error, reason}
+        end
+    end
+  end
+
+  # A specific agent (e.g. react_js_security) only runs when the PR touches a
+  # file whose extension it declares. General agents (no file types) run always.
+  defp applies_to?(%{file_extensions: []}, _files), do: true
+
+  defp applies_to?(%{file_extensions: exts}, files) do
+    extensions = MapSet.new(exts)
+    Enum.any?(files, fn file -> MapSet.member?(extensions, Path.extname(file["path"] || "")) end)
   end
 
   defp run_agent(pr_review, agent) do

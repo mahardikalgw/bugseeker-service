@@ -56,10 +56,27 @@ and open a test PR — watch `mix phx.server` logs for `fetch_diff enqueued revi
 
 ## Review agents (README-style)
 
-Each review agent lives in `agents/<name>.md` and is a focused reviewer persona
-(Bug, Security, Performance, Code Quality, Architecture, Maintainability,
-Testing, Dependency, API/Contract). The bot includes the agent's content
-verbatim in the prompt. Optional `## Severity` section:
+Each review agent is a focused reviewer persona. Two kinds:
+
+- **General** (`priv/agents/<name>.md`): cross-language dimensions — Bug, Security,
+  Performance, Code Quality, Architecture, Maintainability, Testing,
+  Dependency, API/Contract.
+- **Specific / framework** (`priv/agents/<framework>/<dimension>.md`): a framework
+  agent bundles its own dimension checks. e.g. `react_js/` contains
+  `architecture.md`, `code_quality.md`, `security.md`, `performance.md`,
+  `testing.md` — loaded as agents `react_js_architecture`, `react_js_security`,
+  etc.
+
+Optional sections in any agent file:
+
+```markdown
+## File types
+- .tsx
+- .ts
+```
+
+restricts the agent to PRs touching those file extensions (specific agents
+auto-skip when no matching file). And:
 
 ```markdown
 ## Severity
@@ -68,9 +85,9 @@ verbatim in the prompt. Optional `## Severity` section:
 
 raises reported issues whose message matches the key to that severity.
 
-**Adding an agent**: add `agents/<name>.md`, restart. Every PR is reviewed by
-the repo's configured agents (`config :codeseeker, :agents_dir`; per-repo
-overrides via `:repos` or `/codeseeker` commands).
+**Adding an agent**: add `priv/agents/<name>.md` (or `priv/agents/<framework>/<dimension>.md`),
+restart. Every PR is reviewed by the repo's configured agents (`config :codeseeker, :agents_dir`;
+per-repo overrides via `:repos` or `/codeseeker` commands).
 
 ## Per-repo configuration
 

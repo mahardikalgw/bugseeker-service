@@ -46,12 +46,20 @@ defmodule Codeseeker.Agents.Cache do
     dir = Application.app_dir(:codeseeker, subdir)
 
     dir
-    |> Path.join("*.md")
+    |> Path.join("**/*.md")
     |> Path.wildcard()
     |> Enum.sort()
     |> Enum.reduce(%{}, fn path, acc ->
-      # Flat layout (bug.md), so the name is the filename.
-      agent = Agent.load(path, Path.basename(path, ".md"))
+      # Name from the path relative to the agents dir, e.g.:
+      #   security.md            -> "security"
+      #   react_js/security.md   -> "react_js_security"
+      relative =
+        path
+        |> Path.relative_to(dir)
+        |> Path.rootname()
+        |> String.replace("/", "_")
+
+      agent = Agent.load(path, relative)
       Map.put(acc, agent.name, agent)
     end)
   end
