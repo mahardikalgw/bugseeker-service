@@ -7,7 +7,6 @@ defmodule Codeseeker.Application do
   def start(_type, _args) do
     children = [
       Codeseeker.Repo,
-      Codeseeker.Skills.Cache,
       Codeseeker.Agents.Cache,
       Codeseeker.PerRepo,
       Codeseeker.Github.AppAuth,

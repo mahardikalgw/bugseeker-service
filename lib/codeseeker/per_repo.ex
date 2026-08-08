@@ -1,14 +1,16 @@
 defmodule Codeseeker.PerRepo do
   @moduledoc """
   In-memory per-repo configuration: whether the bot is enabled for the
-  repo, which skills are active, and the inline-severity threshold.
+  repo, which review agents are active, and the inline-severity threshold.
 
   Initialized from `config :codeseeker, :repos` at boot; mutated at
   runtime by `/codeseeker` commands. Runtime-only changes are lost on
-  restart — persist them in `config/repos.exs`.
+  restart — persist them in `config :codeseeker, :repos`.
   """
 
   use Agent
+
+  alias Codeseeker.Agents.Cache
 
   @type repo :: %{required(:owner) => String.t(), required(:name) => String.t()}
   @type state :: %{optional(String.t()) => map()}
@@ -23,10 +25,10 @@ defmodule Codeseeker.PerRepo do
     get(repo)[:enabled] != false
   end
 
-  @doc "Skills active for the repo, or `:all` when the repo has no override."
-  @spec skills(repo()) :: :all | [String.t()]
-  def skills(repo) do
-    case get(repo)[:skills] do
+  @doc "Agents active for the repo, or `:all` when the repo has no override."
+  @spec agents(repo()) :: :all | [String.t()]
+  def agents(repo) do
+    case get(repo)[:agents] do
       nil -> :all
       list when is_list(list) -> list
     end
@@ -43,21 +45,21 @@ defmodule Codeseeker.PerRepo do
   @spec overrides(repo()) :: map()
   def overrides(repo), do: get(repo) || %{}
 
-  @doc "Enables a skill for the repo at runtime."
-  @spec enable_skill(repo(), String.t()) :: :ok
-  def enable_skill(repo, skill_name) do
+  @doc "Enables an agent for the repo at runtime."
+  @spec enable_agent(repo(), String.t()) :: :ok
+  def enable_agent(repo, agent_name) do
     update(repo, fn overrides ->
-      current = Map.get(overrides, :skills) || Enum.map(Codeseeker.Skills.Cache.all_names(), & &1)
-      Map.put(overrides, :skills, Enum.uniq([skill_name | current]))
+      current = Map.get(overrides, :agents) || Cache.all_names()
+      Map.put(overrides, :agents, Enum.uniq([agent_name | current]))
     end)
   end
 
-  @doc "Disables a skill for the repo at runtime."
-  @spec disable_skill(repo(), String.t()) :: :ok
-  def disable_skill(repo, skill_name) do
+  @doc "Disables an agent for the repo at runtime."
+  @spec disable_agent(repo(), String.t()) :: :ok
+  def disable_agent(repo, agent_name) do
     update(repo, fn overrides ->
-      current = Map.get(overrides, :skills) || Enum.map(Codeseeker.Skills.Cache.all_names(), & &1)
-      Map.put(overrides, :skills, current -- [skill_name])
+      current = Map.get(overrides, :agents) || Cache.all_names()
+      Map.put(overrides, :agents, current -- [agent_name])
     end)
   end
 
@@ -73,11 +75,11 @@ defmodule Codeseeker.PerRepo do
     update(repo, &Map.put(&1, :enabled, enabled))
   end
 
-  @doc "The repo's active skills, resolved: `:all` becomes the full manifest."
-  @spec active_skill_names(repo()) :: [String.t()]
-  def active_skill_names(repo) do
-    case skills(repo) do
-      :all -> Enum.map(Codeseeker.Skills.Cache.all_names(), & &1)
+  @doc "The repo's active agents, resolved: `:all` becomes the full list."
+  @spec active_agent_names(repo()) :: [String.t()]
+  def active_agent_names(repo) do
+    case agents(repo) do
+      :all -> Cache.all_names()
       list -> list
     end
   end

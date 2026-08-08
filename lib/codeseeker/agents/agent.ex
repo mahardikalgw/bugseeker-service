@@ -1,7 +1,8 @@
-defmodule Codeseeker.Skills.Skill do
+defmodule Codeseeker.Agents.Agent do
   @moduledoc """
-  A skill is a README-style Markdown instruction document that the bot
-  reads and passes to the LLM as review guidelines for one language.
+  A review agent is a README-style Markdown instruction document that the
+  bot reads and passes to the LLM as the review guidelines for one
+  cross-language dimension (Bug, Security, Performance, ...).
 
   The optional `## Severity` section is parsed into `severity_bias`:
   `%{"xss" => "CRITICAL", ...}`. All remaining content is kept verbatim
@@ -21,8 +22,8 @@ defmodule Codeseeker.Skills.Skill do
   @severity_line ~r/^\s*-\s*(.+?)\s*:\s*(CRITICAL|HIGH|MEDIUM|LOW|INFO)\s*$/i
 
   @doc """
-  Loads and parses a skill Markdown file. `name` is derived from the
-  filename unless given explicitly.
+  Loads and parses an agent Markdown file. `name` defaults to the filename
+  without extension.
   """
   @spec load(String.t(), String.t() | nil) :: t()
   def load(path, name \\ nil) do
@@ -30,7 +31,7 @@ defmodule Codeseeker.Skills.Skill do
     {content, severity_bias} = parse(content)
 
     %__MODULE__{
-      name: name || Path.basename(Path.dirname(path)),
+      name: name || Path.basename(path, ".md"),
       path: path,
       content: content,
       severity_bias: severity_bias
@@ -38,7 +39,7 @@ defmodule Codeseeker.Skills.Skill do
   end
 
   @doc """
-  Splits a skill file into the instruction content (everything except the
+  Splits an agent file into the instruction content (everything except the
   `## Severity` block) and the parsed `severity_bias` map.
   """
   @spec parse(String.t()) :: {String.t(), %{optional(String.t()) => String.t()}}

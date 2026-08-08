@@ -9,10 +9,10 @@ defmodule Codeseeker.PerRepoTest do
     do: %{owner: "per-repo-#{suffix}", name: "repo", installation_id: 1}
 
   describe "defaults" do
-    test "repo without overrides is enabled with :all skills and global threshold" do
+    test "repo without overrides is enabled with :all agents and global threshold" do
       r = repo(:defaults)
       assert PerRepo.enabled?(r)
-      assert PerRepo.skills(r) == :all
+      assert PerRepo.agents(r) == :all
       assert PerRepo.min_inline_severity(r) == "HIGH"
     end
   end
@@ -26,14 +26,14 @@ defmodule Codeseeker.PerRepoTest do
       assert PerRepo.enabled?(r)
     end
 
-    test "skill enable/disable resolves to explicit lists" do
-      r = repo(:skills)
-      PerRepo.enable_skill(r, "go")
-      assert "go" in PerRepo.active_skill_names(r)
-      assert PerRepo.skills(r) |> is_list()
+    test "agent enable/disable resolves to explicit lists" do
+      r = repo(:agents)
+      PerRepo.enable_agent(r, "security")
+      assert "security" in PerRepo.active_agent_names(r)
+      assert PerRepo.agents(r) |> is_list()
 
-      PerRepo.disable_skill(r, "go")
-      refute "go" in PerRepo.active_skill_names(r)
+      PerRepo.disable_agent(r, "security")
+      refute "security" in PerRepo.active_agent_names(r)
     end
 
     test "min inline severity override" do

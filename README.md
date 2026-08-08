@@ -69,11 +69,8 @@ verbatim in the prompt. Optional `## Severity` section:
 raises reported issues whose message matches the key to that severity.
 
 **Adding an agent**: add `agents/<name>.md`, restart. Every PR is reviewed by
-all configured agents (`config :codeseeker, :agents_dir`).
-
-Agents are cross-language and review the whole PR diff. A separate language
-`skills/` system (per-file) is also bundled and can be enabled later; agents
-are the active path.
+the repo's configured agents (`config :codeseeker, :agents_dir`; per-repo
+overrides via `:repos` or `/codeseeker` commands).
 
 ## Per-repo configuration
 
@@ -81,7 +78,7 @@ are the active path.
 
 ```elixir
 config :codeseeker, :repos, %{
-  "acme-internal/web-frontend" => %{enabled: true, skills: ["typescript", "generic"], min_inline_severity: "HIGH"},
+  "acme-internal/web-frontend" => %{enabled: true, agents: ["security", "bug", "performance"], min_inline_severity: "HIGH"},
   "acme-internal/legacy-api"   => %{enabled: false}
 }
 ```
@@ -91,8 +88,8 @@ Runtime changes (lost on restart — persist them in the config above):
 | Command | Effect |
 |---|---|
 | `/codeseeker status` | Show bot state for the repo |
-| `/codeseeker enable-skill <name>` | Enable a skill |
-| `/codeseeker disable-skill <name>` | Disable a skill |
+| `/codeseeker enable-agent <name>` | Enable a review agent |
+| `/codeseeker disable-agent <name>` | Disable a review agent |
 
 ## Configuration knobs (`config/config.exs`)
 
@@ -127,4 +124,4 @@ Checklist:
 
 - Per-repo runtime toggles (`/codeseeker`) are in-memory and reset on restart — persist them in `config :codeseeker, :repos`.
 - `/codeseeker` commands can be triggered by anyone who can comment on a PR (internal single-org tool).
-- False positives are controlled by severity thresholds and the skill files; review them every 2 weeks (PRD §3).
+- False positives are controlled by severity thresholds and the agent files; review them every 2 weeks (PRD §3).

@@ -23,8 +23,8 @@ defmodule Mix.Tasks.Codeseeker.Stats do
     IO.puts("DeepSeek calls: #{snapshot.deepseek.ok} ok / #{snapshot.deepseek.error} error")
     IO.puts("\nIssues by severity:")
     print_map(snapshot.by_severity)
-    IO.puts("\nIssues by skill:")
-    print_map(snapshot.by_skill)
+    IO.puts("\nIssues by agent:")
+    print_map(snapshot.by_agent)
 
     if snapshot.recent_duration_ms != [] do
       durations = snapshot.recent_duration_ms

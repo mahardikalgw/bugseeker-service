@@ -7,7 +7,7 @@ defmodule Codeseeker.Reviews.Issue do
   """
 
   @enforce_keys [:file_path, :severity, :category, :message]
-  defstruct [:file_path, :line, :severity, :category, :message, :recommendation, :skill]
+  defstruct [:file_path, :line, :severity, :category, :message, :recommendation, :agent]
 
   @type t :: %__MODULE__{
           file_path: String.t(),
@@ -16,7 +16,7 @@ defmodule Codeseeker.Reviews.Issue do
           category: String.t(),
           message: String.t(),
           recommendation: String.t() | nil,
-          skill: String.t() | nil
+          agent: String.t() | nil
         }
 
   @severities ~w(CRITICAL HIGH MEDIUM LOW INFO)

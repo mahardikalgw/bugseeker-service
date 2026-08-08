@@ -11,7 +11,7 @@ defmodule Codeseeker.Reviews.AggregatorTest do
       severity: severity,
       category: category,
       message: message,
-      skill: "typescript"
+      agent: "security"
     }
   end
 

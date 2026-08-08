@@ -28,7 +28,7 @@ defmodule Codeseeker.Reviews.Aggregator do
     * `patches` — `%{file_path => patch}` for hunk validation
     * `skipped` — list of `%{path: path, reason: reason}` maps
     * `warnings` — additional free-form warning strings
-    * `pr` — map with `:repo`, `:pr_number`, `:head_sha`, `:skills`
+    * `pr` — map with `:repo`, `:pr_number`, `:head_sha`, `:agents`
   """
   @spec aggregate(
           [Issue.t()],
@@ -94,7 +94,7 @@ defmodule Codeseeker.Reviews.Aggregator do
       |> Enum.group_by(& &1.file_path)
       |> Enum.sort_by(fn {path, _} -> path end)
 
-    skills = Enum.map_join(pr[:skills] || [], ", ", & &1)
+    agents = Enum.map_join(pr[:agents] || [], ", ", & &1)
 
     file_sections =
       Enum.map_join(by_file, "\n", fn {path, file_issues} ->
@@ -120,7 +120,7 @@ defmodule Codeseeker.Reviews.Aggregator do
     header =
       """
       ## 🤖 Codeseeker Review — PR ##{pr.pr_number}
-      Automatic review#{if skills == "", do: "", else: " (skills: #{skills})"} on `#{String.slice(pr.head_sha, 0..7)}`.
+      Automatic review#{if agents == "", do: "", else: " (agents: #{agents})"} on `#{String.slice(pr.head_sha, 0..7)}`.
 
       """
 

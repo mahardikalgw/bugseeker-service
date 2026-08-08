@@ -79,23 +79,6 @@ config :codeseeker, :exclusions, %{
   binary_markers: ["Binary files differ", <<0>>]
 }
 
-# Extension -> skill name mapping. Path of each skill file is skills/<name>/README.md
-config :codeseeker, :skills_manifest, %{
-  ".ts" => "typescript",
-  ".tsx" => "typescript",
-  ".js" => "typescript",
-  ".jsx" => "typescript",
-  ".mjs" => "typescript",
-  ".cjs" => "typescript",
-  ".go" => "go",
-  ".php" => "php",
-  ".ex" => "elixir",
-  ".exs" => "elixir"
-}
-
-config :codeseeker, :skills_dir, "skills"
-config :codeseeker, :fallback_skill, "generic"
-
 # Cross-language review agents (each reviews the whole PR diff).
 config :codeseeker, :agents_dir, "agents"
 

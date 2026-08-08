@@ -1,67 +1,80 @@
 defmodule Codeseeker.Llm.ParserTest do
   use ExUnit.Case, async: true
 
+  alias Codeseeker.Agents.Cache
   alias Codeseeker.Llm.Parser
   alias Codeseeker.Reviews.Issue
-  alias Codeseeker.Skills.Cache
 
-  defp skill, do: Cache.get("typescript")
+  defp agent, do: Cache.get("security")
 
   describe "parse/3" do
     test "parses valid issues" do
       content =
-        ~s({"issues":[{"line":84,"severity":"HIGH","category":"security","message":"Query built by concatenation","recommendation":"Use parameters"}]})
+        ~s({"issues":[{"file_path":"src/api.ts","line":84,"severity":"HIGH","category":"security","message":"Query built by concatenation","recommendation":"Use parameters"}]})
 
-      assert {:ok, [issue]} = Parser.parse(content, "src/api.ts", skill())
+      assert {:ok, [issue]} = Parser.parse(content, nil, agent())
 
       assert %Issue{file_path: "src/api.ts", line: 84, severity: "HIGH", category: "security"} =
                issue
 
       assert issue.recommendation == "Use parameters"
-      assert issue.skill == "typescript"
+      assert issue.agent == "security"
+    end
+
+    test "uses the default file_path when an item has none" do
+      content = ~s({"issues":[{"line":5,"severity":"LOW","category":"style","message":"m"}]})
+      assert {:ok, [%Issue{file_path: "a.ts"}]} = Parser.parse(content, "a.ts", agent())
+    end
+
+    test "drops items with no file_path and no default" do
+      content = ~s({"issues":[{"line":5,"severity":"LOW","category":"style","message":"m"}]})
+      assert {:ok, []} = Parser.parse(content, nil, agent())
     end
 
     test "handles empty issues" do
-      assert {:ok, []} = Parser.parse(~s({"issues":[]}), "a.ts", skill())
+      assert {:ok, []} = Parser.parse(~s({"issues":[]}), "a.ts", agent())
     end
 
     test "normalizes severity/category case" do
-      content = ~s({"issues":[{"line":1,"severity":"high","category":"Security","message":"m"}]})
+      content =
+        ~s({"issues":[{"file_path":"a.ts","line":1,"severity":"high","category":"Security","message":"m"}]})
 
       assert {:ok, [%Issue{severity: "HIGH", category: "security"}]} =
-               Parser.parse(content, "a.ts", skill())
+               Parser.parse(content, nil, agent())
     end
 
     test "drops items with invalid enums" do
       content =
-        ~s({"issues":[{"line":1,"severity":"EXTREME","category":"security","message":"bad"},{"line":2,"severity":"LOW","category":"security","message":"ok"}]})
+        ~s({"issues":[{"file_path":"a.ts","line":1,"severity":"EXTREME","category":"security","message":"bad"},{"file_path":"a.ts","line":2,"severity":"LOW","category":"security","message":"ok"}]})
 
-      assert {:ok, [issue]} = Parser.parse(content, "a.ts", skill())
+      assert {:ok, [issue]} = Parser.parse(content, nil, agent())
       assert issue.line == 2
     end
 
     test "drops items with nil line instead of crashing" do
-      content = ~s({"issues":[{"line":null,"severity":"LOW","category":"style","message":"m"}]})
-      assert {:ok, [%Issue{line: nil}]} = Parser.parse(content, "a.ts", skill())
+      content =
+        ~s({"issues":[{"file_path":"a.ts","line":null,"severity":"LOW","category":"style","message":"m"}]})
+
+      assert {:ok, [%Issue{line: nil}]} = Parser.parse(content, nil, agent())
     end
 
-    test "applies severity bias from the skill" do
+    test "applies severity bias from the agent" do
       content =
-        ~s({"issues":[{"line":1,"severity":"MEDIUM","category":"security","message":"XSS via innerHTML with user input"}]})
+        ~s({"issues":[{"file_path":"a.ts","line":1,"severity":"MEDIUM","category":"security","message":"SQL injection from user input"}]})
 
-      assert {:ok, [%Issue{severity: "CRITICAL"}]} = Parser.parse(content, "a.ts", skill())
+      assert {:ok, [%Issue{severity: "CRITICAL"}]} = Parser.parse(content, nil, agent())
     end
 
     test "returns unparseable for invalid JSON" do
-      assert {:error, :unparseable} = Parser.parse("not json at all", "a.ts", skill())
+      assert {:error, :unparseable} = Parser.parse("not json at all", "a.ts", agent())
     end
 
     test "returns unparseable for valid JSON without issues key" do
-      assert {:error, :unparseable} = Parser.parse(~s({"foo": 1}), "a.ts", skill())
+      assert {:error, :unparseable} = Parser.parse(~s({"foo": 1}), "a.ts", agent())
     end
 
     test "returns unparseable for nil content" do
-      assert {:error, :unparseable} = Parser.parse(nil, "a.ts", skill())
+      assert {:error, :unparseable} = Parser.parse(nil, "a.ts", agent())
     end
   end
 end

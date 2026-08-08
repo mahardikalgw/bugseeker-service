@@ -1,30 +1,31 @@
 defmodule Codeseeker.Llm.Parser do
   @moduledoc """
   Parses the LLM's JSON response into a list of `Codeseeker.Reviews.Issue`
-  structs, validating enums and applying the skill's severity bias.
-
-  Pure module — the repair round-trip to DeepSeek is orchestrated by the
-  caller (the coordinator's `review_file/3`).
+  structs, validating enums and applying the agent's severity bias.
   """
 
+  alias Codeseeker.Agents
+  alias Codeseeker.Agents.Agent
   alias Codeseeker.Reviews.Issue
-  alias Codeseeker.Skills.{Registry, Skill}
 
   @doc """
-  Parses the raw LLM `content` into issues for `file_path`.
+  Parses the raw LLM `content` into issues.
 
-  Invalid items (unknown severity/category) are dropped and logged rather
-  than failing the whole file.
+  `default_file_path` is used when an item has no `file_path` (per-file
+  output); for agents it is `nil` and each item must supply its own.
+  Invalid items (unknown severity/category, or no file_path) are dropped.
+
+  Agent severity bias is applied to the parsed issues.
   """
-  @spec parse(String.t() | nil, String.t(), Skill.t()) ::
+  @spec parse(String.t() | nil, String.t() | nil, Agent.t()) ::
           {:ok, [Issue.t()]} | {:error, :unparseable}
-  def parse(content, file_path, skill) when is_binary(content) do
+  def parse(content, file_path, agent) when is_binary(content) do
     case Jason.decode(content) do
       {:ok, %{"issues" => issues}} when is_list(issues) ->
         parsed =
           issues
-          |> Enum.flat_map(&parse_issue(&1, file_path, skill))
-          |> Registry.apply_bias(skill)
+          |> Enum.flat_map(&parse_issue(&1, file_path, agent))
+          |> Agents.apply_bias(agent)
 
         {:ok, parsed}
 
@@ -36,9 +37,9 @@ defmodule Codeseeker.Llm.Parser do
     end
   end
 
-  def parse(_content, _file_path, _skill), do: {:error, :unparseable}
+  def parse(_content, _file_path, _agent), do: {:error, :unparseable}
 
-  defp parse_issue(%{"message" => message} = raw, default_file_path, skill) do
+  defp parse_issue(%{"message" => message} = raw, default_file_path, agent) do
     severity = raw |> Map.get("severity") |> normalize_enum(&Issue.valid_severity?/1, :severity)
     category = raw |> Map.get("category") |> normalize_enum(&Issue.valid_category?/1, :category)
 
@@ -63,7 +64,7 @@ defmodule Codeseeker.Llm.Parser do
           category: category,
           message: message,
           recommendation: raw["recommendation"],
-          skill: skill.name
+          agent: agent.name
         }
       ]
     else
@@ -71,7 +72,7 @@ defmodule Codeseeker.Llm.Parser do
     end
   end
 
-  defp parse_issue(_raw, _file_path, _skill), do: []
+  defp parse_issue(_raw, _file_path, _agent), do: []
 
   defp normalize_enum(nil, _valid?, _kind), do: nil
 

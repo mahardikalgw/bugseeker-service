@@ -131,7 +131,7 @@ defmodule Codeseeker.Reviews do
           line: issue.line,
           severity: issue.severity,
           category: issue.category,
-          skill_used: issue.skill || "generic",
+          skill_used: issue.agent || "generic",
           message: issue.message,
           recommendation: issue.recommendation,
           posted: false,
@@ -174,9 +174,9 @@ defmodule Codeseeker.Reviews do
     )
   end
 
-  @doc "Distinct skills used across a run (for the summary header)."
-  @spec skills_for(PrReview.t()) :: [String.t()]
-  def skills_for(%PrReview{id: pr_review_id}) do
+  @doc "Distinct agents used across a run (for the summary header)."
+  @spec agents_for(PrReview.t()) :: [String.t()]
+  def agents_for(%PrReview{id: pr_review_id}) do
     query =
       from(i in ReviewIssue,
         where: i.pr_review_id == ^pr_review_id,
@@ -195,7 +195,7 @@ defmodule Codeseeker.Reviews do
       category: ri.category,
       message: ri.message,
       recommendation: ri.recommendation,
-      skill: ri.skill_used
+      agent: ri.skill_used
     }
   end
 end

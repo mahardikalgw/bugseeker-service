@@ -50,7 +50,7 @@ defmodule Codeseeker.Jobs.AgentJobTest do
     assert [issue] = Reviews.issues_for(pr_review)
     assert issue.file_path == "src/api.ts"
     assert issue.severity == "CRITICAL"
-    assert issue.skill == "security"
+    assert issue.agent == "security"
   end
 
   test "includes repo guidelines in the agent prompt when present" do

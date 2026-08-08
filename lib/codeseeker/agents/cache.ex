@@ -11,9 +11,9 @@ defmodule Codeseeker.Agents.Cache do
 
   use GenServer
 
-  alias Codeseeker.Skills.Skill
+  alias Codeseeker.Agents.Agent
 
-  @type t :: %{optional(String.t()) => Skill.t()}
+  @type t :: %{optional(String.t()) => Agent.t()}
 
   def start_link(_opts) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
@@ -24,7 +24,7 @@ defmodule Codeseeker.Agents.Cache do
   def all, do: GenServer.call(__MODULE__, :all)
 
   @doc "Returns the agent for `name`, or `nil`."
-  @spec get(String.t()) :: Skill.t() | nil
+  @spec get(String.t()) :: Agent.t() | nil
   def get(name), do: Map.get(all(), name)
 
   @doc "All available agent names."
@@ -48,8 +48,8 @@ defmodule Codeseeker.Agents.Cache do
     |> Enum.sort()
     |> Enum.reduce(%{}, fn path, acc ->
       # Flat layout (agents/bug.md), so the name is the filename.
-      skill = Skill.load(path, Path.basename(path, ".md"))
-      Map.put(acc, skill.name, skill)
+      agent = Agent.load(path, Path.basename(path, ".md"))
+      Map.put(acc, agent.name, agent)
     end)
   end
 end

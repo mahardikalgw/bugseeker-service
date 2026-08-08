@@ -1,12 +1,12 @@
 defmodule Codeseeker.Llm.Prompt do
   @moduledoc """
-  Composes the final prompt sent to DeepSeek for one file:
+  Composes the final prompt sent to DeepSeek for one review agent.
 
-  `base_prompt` (output contract) + skill content + optional team
-  guidelines + the file diff with new-side line numbers.
+  `base_prompt` (output contract) + agent content + optional team
+  guidelines + the whole PR diff with new-side line numbers.
   """
 
-  alias Codeseeker.Skills.Skill
+  alias Codeseeker.Agents.Agent
 
   @base_prompt """
   You are a senior code reviewer. Analyze the diff below and find CLEAR issues:
@@ -29,40 +29,13 @@ defmodule Codeseeker.Llm.Prompt do
   def base_prompt, do: @base_prompt
 
   @doc """
-  Builds the final prompt for one file.
-
-  `file` is a map with at least `:path` and `:patch`. `guidelines` is the
-  truncated content of the repo's engineering guidelines, or `nil`.
-  """
-  @spec build(Skill.t(), map(), String.t() | nil) :: String.t()
-  def build(%Skill{name: name, content: skill_content}, %{path: path, patch: patch}, guidelines) do
-    guidelines_section =
-      if guidelines && guidelines != "" do
-        "\n\n## TEAM GUIDELINES (from docs/engineering-guidelines.md):\n" <> guidelines
-      else
-        ""
-      end
-
-    @base_prompt <>
-      "\n\n## SKILL: " <>
-      name <>
-      "\n" <>
-      skill_content <>
-      guidelines_section <>
-      "\n\n## FILE: " <>
-      path <>
-      "\n## DIFF (line numbers are for the NEW file, right side of the diff):\n```diff\n" <>
-      (patch || "") <> "\n```"
-  end
-
-  @doc """
   Builds a prompt for one review agent reviewing the WHOLE PR diff.
 
   `files` is a list of maps with `:path` and `:patch`. Each agent reports
   issues with a `file_path` so they can be attributed to the right file.
   """
-  @spec build_agent(Skill.t(), [map()], String.t() | nil) :: String.t()
-  def build_agent(%Skill{name: name, content: agent_content}, files, guidelines) do
+  @spec build_agent(Agent.t(), [map()], String.t() | nil) :: String.t()
+  def build_agent(%Agent{name: name, content: content}, files, guidelines) do
     guidelines_section =
       if guidelines && guidelines != "" do
         "\n\n## TEAM GUIDELINES (from docs/engineering-guidelines.md):\n" <> guidelines
@@ -81,7 +54,7 @@ defmodule Codeseeker.Llm.Prompt do
       "\n\n## AGENT: " <>
       name <>
       "\n" <>
-      agent_content <>
+      content <>
       guidelines_section <>
       "\n\n## DIFF (multiple files; report file_path + new-file line for every issue):\n\n" <>
       diff_section

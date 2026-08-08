@@ -101,7 +101,7 @@ defmodule CodeseekerWeb.WebhookControllerTest do
       assert %{"dispatched" => "command"} = json_response(conn, 200)
       assert_receive {:command_reply, body}, 1_000
       assert body =~ "**Codeseeker status**"
-      assert body =~ "Active skills"
+      assert body =~ "Active agents"
     end
 
     test "non-command comments are ignored" do

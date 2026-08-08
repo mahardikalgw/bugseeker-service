@@ -42,13 +42,13 @@ defmodule Codeseeker.Jobs.AggregateReviewJob do
 
   defp build_and_post(pr_review) do
     issues = Reviews.issues_for(pr_review)
-    skills = Reviews.skills_for(pr_review)
+    agents = Reviews.agents_for(pr_review)
 
     pr = %{
       repo: repo_map(pr_review),
       pr_number: pr_review.pr_number,
       head_sha: pr_review.head_sha,
-      skills: skills
+      agents: agents
     }
 
     # Patches are not persisted in the Oban pipeline; line validity is

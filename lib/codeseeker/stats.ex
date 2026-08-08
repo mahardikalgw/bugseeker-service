@@ -29,7 +29,7 @@ defmodule Codeseeker.Stats do
 
     Enum.each(issues, fn issue ->
       bump({:severity, issue.severity})
-      bump({:skill, issue.skill || "unknown"})
+      bump({:agent, issue.agent || "unknown"})
     end)
 
     if duration_ms do
@@ -60,7 +60,7 @@ defmodule Codeseeker.Stats do
       outcomes:
         for(o <- [:ok, :failed, :skipped], into: %{}, do: {o, counter(values, {:outcome, o})}),
       by_severity: histogram(values, :severity),
-      by_skill: histogram(values, :skill),
+      by_agent: histogram(values, :agent),
       deepseek: %{
         ok: counter(values, {:deepseek, :ok}),
         error: counter(values, {:deepseek, :error})

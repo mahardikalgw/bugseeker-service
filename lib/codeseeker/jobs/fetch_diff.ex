@@ -50,7 +50,7 @@ defmodule Codeseeker.Jobs.FetchDiffJob do
           Reviews.store_files(pr_review, kept)
           Reviews.mark_processing(pr_review)
 
-          agents = Codeseeker.Agents.Cache.all_names()
+          agents = PerRepo.active_agent_names(repo)
           Reviews.set_total_files(pr_review, length(agents))
           enqueue_agent_jobs(pr_review, agents)
 

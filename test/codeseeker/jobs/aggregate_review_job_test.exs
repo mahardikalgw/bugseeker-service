@@ -15,7 +15,7 @@ defmodule Codeseeker.Jobs.AggregateReviewJobTest do
       severity: "CRITICAL",
       category: "security",
       message: "XSS",
-      skill: "typescript"
+      agent: "security"
     )
 
     expect(GithubMock, :post_review, fn _repo, 12, sha, body, comments ->
@@ -59,7 +59,7 @@ defmodule Codeseeker.Jobs.AggregateReviewJobTest do
       severity: "CRITICAL",
       category: "bug",
       message: "bad line",
-      skill: "typescript"
+      agent: "security"
     )
 
     # No patch is persisted, so lines pass local validation; GitHub rejects them.
@@ -95,7 +95,7 @@ defmodule Codeseeker.Jobs.AggregateReviewJobTest do
           severity: "CRITICAL",
           category: "security",
           message: "XSS",
-          skill: "typescript"
+          agent: "security"
         }
         |> Map.merge(Map.new(attrs))
       ])

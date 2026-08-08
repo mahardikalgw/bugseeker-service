@@ -12,10 +12,10 @@ defmodule Codeseeker.CommandsTest do
     :ok
   end
 
-  defp repo, do: %{owner: "acme-internal", name: "web-frontend", installation_id: 42}
+  defp repo, do: %{owner: "cmd-test-owner", name: "cmd-repo", installation_id: 42}
 
   describe "run/1" do
-    test "enable-skill enables a valid skill and replies" do
+    test "enable-agent enables a valid agent and replies" do
       test_pid = self()
 
       expect(GithubMock, :post_issue_comment, fn _repo, _pr, body ->
@@ -26,17 +26,17 @@ defmodule Codeseeker.CommandsTest do
       Commands.run(%{
         repo: repo(),
         pr_number: 1,
-        comment: "/codeseeker enable-skill go",
+        comment: "/codeseeker enable-agent security",
         user: "dev"
       })
 
       assert_receive {:reply, body}, 1_000
       assert body =~ "@dev "
-      assert body =~ "Skill `go` is now **enabled**"
-      assert "go" in Codeseeker.PerRepo.active_skill_names(repo())
+      assert body =~ "Agent `security` is now **enabled**"
+      assert "security" in Codeseeker.PerRepo.active_agent_names(repo())
     end
 
-    test "disable-skill disables a valid skill" do
+    test "disable-agent disables a valid agent" do
       test_pid = self()
 
       expect(GithubMock, :post_issue_comment, fn _repo, _pr, body ->
@@ -44,21 +44,21 @@ defmodule Codeseeker.CommandsTest do
         {:ok, %{}}
       end)
 
-      Codeseeker.PerRepo.enable_skill(repo(), "go")
+      Codeseeker.PerRepo.enable_agent(repo(), "security")
 
       Commands.run(%{
         repo: repo(),
         pr_number: 1,
-        comment: "/codeseeker disable-skill go",
+        comment: "/codeseeker disable-agent security",
         user: "dev"
       })
 
       assert_receive {:reply, body}, 1_000
-      assert body =~ "Skill `go` is now **disabled**"
-      refute "go" in Codeseeker.PerRepo.active_skill_names(repo())
+      assert body =~ "Agent `security` is now **disabled**"
+      refute "security" in Codeseeker.PerRepo.active_agent_names(repo())
     end
 
-    test "unknown skill lists available skills" do
+    test "unknown agent lists available agents" do
       test_pid = self()
 
       expect(GithubMock, :post_issue_comment, fn _repo, _pr, body ->
@@ -69,16 +69,16 @@ defmodule Codeseeker.CommandsTest do
       Commands.run(%{
         repo: repo(),
         pr_number: 1,
-        comment: "/codeseeker enable-skill cobol",
+        comment: "/codeseeker enable-agent cobol",
         user: "dev"
       })
 
       assert_receive {:reply, body}, 1_000
-      assert body =~ "Unknown skill `cobol`"
-      assert body =~ "typescript"
+      assert body =~ "Unknown agent `cobol`"
+      assert body =~ "security"
     end
 
-    test "status reports enabled state, skills and threshold" do
+    test "status reports enabled state, agents and threshold" do
       test_pid = self()
 
       expect(GithubMock, :post_issue_comment, fn _repo, _pr, body ->
@@ -90,7 +90,7 @@ defmodule Codeseeker.CommandsTest do
 
       assert_receive {:reply, body}, 1_000
       assert body =~ "Bot enabled: yes"
-      assert body =~ "Active skills"
+      assert body =~ "Active agents"
       assert body =~ "Inline threshold: `HIGH`"
     end
 
