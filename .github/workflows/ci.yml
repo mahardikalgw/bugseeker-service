@@ -51,7 +51,10 @@ jobs:
         env:
           PGUSER: postgres
           PGPASSWORD: postgres
-        run: mix test
+        run: |
+          mix ecto.create
+          mix ecto.migrate
+          mix test
 
   docker:
     name: Build image

@@ -11,16 +11,24 @@ config :logger, level: :warning
 config :phoenix, :plug_init_mode, :runtime
 
 # Test database
-config :bugseeker, Bugseeker.Repo,
+# Local dev Postgres trusts password-less connections as the OS user; the CI
+# postgres service creates user "postgres" with a password. PGUSER/PGPASSWORD
+# let CI inject them without editing config.
+repo_config = [
   hostname: "localhost",
   database: "bugseeker_test",
-  # Local dev Postgres trusts password-less connections as the OS user; the CI
-  # postgres service creates user "postgres" with a password. PGUSER/PGPASSWORD
-  # let CI inject them without editing config.
-  username: System.get_env("PGUSER"),
-  password: System.get_env("PGPASSWORD"),
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 10
+]
+
+repo_config =
+  case System.get_env("PGUSER") do
+    nil -> repo_config
+    user -> Keyword.put(repo_config, :username, user)
+  end
+
+repo_config = Keyword.put(repo_config, :password, System.get_env("PGPASSWORD"))
+config :bugseeker, Bugseeker.Repo, repo_config
 
 # Oban in manual mode: tests enqueue/perform jobs explicitly. Testing mode
 # disables queues, plugins, and uses an isolated (DB-free) peer; an isolated
