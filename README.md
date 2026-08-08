@@ -4,7 +4,7 @@
   <img src="https://ih1.redbubble.net/image.613528364.8220/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.u1.jpg" alt="Bugseeker" width="300">
 </p>
 
-> Internal tool: GitHub PR automated review powered by DeepSeek, written in Elixir (Phoenix + PostgreSQL + Oban).
+> Internal tool: GitHub PR automated review, written in Elixir (Phoenix + PostgreSQL + Oban).
 
 Every `pull_request` `opened`/`synchronize` webhook triggers a review pipeline:
 fetch diff → filter files → **fan out to review agents** (Bug, Security, Performance, ...) → aggregate all issues into a GitHub review (CRITICAL/HIGH as inline comments, the rest in a summary).
