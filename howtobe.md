@@ -1,6 +1,6 @@
-# HowToBe — Codeseeker Tutorial
+# HowToBe — Bugseeker Tutorial
 
-A complete guide to running, configuring, and deploying **Codeseeker** — an
+A complete guide to running, configuring, and deploying **Bugseeker** — an
 AI code review bot (Elixir/Phoenix + Oban + PostgreSQL + DeepSeek) that
 automatically reviews every GitHub Pull Request.
 
@@ -11,7 +11,7 @@ Table of contents:
 3. [Testing Webhooks Locally](#3-testing-webhooks-locally)
 4. [Configuration](#4-configuration)
    - [Environment variables](#environment-variables)
-   - [Per-repo agent routing (.codeseeker.yml)](#per-repo-agent-routing-codeseekeryml)
+   - [Per-repo agent routing (.bugseeker.yml)](#per-repo-agent-routing-bugseekeryml)
    - [Service-side configuration](#service-side-configuration)
    - [Writing / editing agents](#writing--editing-agents)
 5. [Deployment](#5-deployment)
@@ -35,8 +35,8 @@ Table of contents:
    - **Webhook secret**: generate with `openssl rand -hex 32`
    - **Permissions** (Repository):
      - Pull requests: **Read & write** (post reviews)
-     - Issues: **Read & write** (reply to `/codeseeker` commands)
-     - Contents: **Read-only** (read diffs, guidelines, `.codeseeker.yml`)
+     - Issues: **Read & write** (reply to `/bugseeker` commands)
+     - Contents: **Read-only** (read diffs, guidelines, `.bugseeker.yml`)
    - **Subscribe to events**: `pull_request`, `issue_comment`
 2. **Generate a private key** (a `.pem` file) and store it safely.
 3. Note the **App ID** from the app page.
@@ -69,7 +69,7 @@ Verify the server is up:
 
 ```bash
 curl http://localhost:4000/healthz   # -> ok
-mix codeseeker.stats                 # runtime counters (optional)
+mix bugseeker.stats                 # runtime counters (optional)
 ```
 
 ---
@@ -102,7 +102,7 @@ All read in `config/runtime.exs`:
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `DATABASE_URL` | prod | `postgres://localhost:5432/codeseeker_dev` | Oban queue + review runs |
+| `DATABASE_URL` | prod | `postgres://localhost:5432/bugseeker_dev` | Oban queue + review runs |
 | `GITHUB_APP_ID` | prod | — | GitHub App ID |
 | `GITHUB_APP_PRIVATE_KEY_PATH` | prod | — | Path to the `.pem` file |
 | `GITHUB_WEBHOOK_SECRET` | prod | — | Webhook secret (HMAC) |
@@ -115,13 +115,13 @@ All read in `config/runtime.exs`:
 In dev, values come from `.env` (via Dotenv). In prod they **must** come
 from the environment — the app raises at boot if any are missing.
 
-### Per-repo agent routing (`.codeseeker.yml`)
+### Per-repo agent routing (`.bugseeker.yml`)
 
 The primary way to control which agents review a given repo: **a file inside
 that repo itself**. Each team manages its own repo — no service restart
 required.
 
-Place `.codeseeker.yml` (or `.codeseeker.yaml`) at the target repo's root:
+Place `.bugseeker.yml` (or `.bugseeker.yaml`) at the target repo's root:
 
 ```yaml
 # Framework bundle: a name without "_" expands to all "<name>_*" agents.
@@ -161,8 +161,8 @@ Available agents (auto-loaded from `priv/agents/**/*.md` at boot):
 `config/config.exs`:
 
 ```elixir
-# Per-repo overrides (used when the repo has NO .codeseeker.yml)
-config :codeseeker, :repos, %{
+# Per-repo overrides (used when the repo has NO .bugseeker.yml)
+config :bugseeker, :repos, %{
   "acme-internal/web-frontend" => %{
     agents: ["next_js", "typescript"],
     min_inline_severity: "HIGH"
@@ -171,13 +171,13 @@ config :codeseeker, :repos, %{
 }
 
 # Default inline threshold (CRITICAL > HIGH > MEDIUM > LOW > INFO)
-config :codeseeker, :min_inline_severity, "HIGH"
+config :bugseeker, :min_inline_severity, "HIGH"
 
 # Hard cap on reviewed files per PR
-config :codeseeker, :max_files_per_pr, 30
+config :bugseeker, :max_files_per_pr, 30
 
 # Team guidelines file fetched per PR and appended to prompts
-config :codeseeker, :guidelines_path, "docs/engineering-guidelines.md"
+config :bugseeker, :guidelines_path, "docs/engineering-guidelines.md"
 ```
 
 Runtime configuration via PR comments (**lost on restart** — persist in
@@ -185,9 +185,9 @@ Runtime configuration via PR comments (**lost on restart** — persist in
 
 | Command | Effect |
 |---|---|
-| `/codeseeker status` | Show bot state for the repo |
-| `/codeseeker enable-agent <name>` | Enable an agent |
-| `/codeseeker disable-agent <name>` | Disable an agent |
+| `/bugseeker status` | Show bot state for the repo |
+| `/bugseeker enable-agent <name>` | Enable an agent |
+| `/bugseeker disable-agent <name>` | Disable an agent |
 
 ### Writing / editing agents
 
@@ -225,26 +225,26 @@ the existing `priv/agents/react_js/` files as the structural template.
 ## 5. Deployment
 
 Deploy artifacts live in `deploy/`: `Dockerfile`, `entrypoint.sh`,
-`deploy.sh` (push over Tailscale SSH), `systemd/codeseeker.service`, and
-`codeseeker.env.example`.
+`deploy.sh` (push over Tailscale SSH), `systemd/bugseeker.service`, and
+`bugseeker.env.example`.
 
 ### VPS checklist (systemd)
 
 1. **PostgreSQL**: provision on the VPS, create the database + user:
 
    ```sql
-   CREATE DATABASE codeseeker_prod;
-   CREATE USER codeseeker WITH PASSWORD '...';
-   GRANT ALL PRIVILEGES ON DATABASE codeseeker_prod TO codeseeker;
+   CREATE DATABASE bugseeker_prod;
+   CREATE USER bugseeker WITH PASSWORD '...';
+   GRANT ALL PRIVILEGES ON DATABASE bugseeker_prod TO bugseeker;
    ```
 
 2. **Env file**:
 
    ```bash
-   sudo cp deploy/codeseeker.env.example /etc/codeseeker.env
-   sudo chmod 600 /etc/codeseeker.env
+   sudo cp deploy/bugseeker.env.example /etc/bugseeker.env
+   sudo chmod 600 /etc/bugseeker.env
    # fill in DATABASE_URL, GITHUB_*, DEEPSEEK_API_KEY, etc.
-   # also copy the private key: /etc/codeseeker-app.pem
+   # also copy the private key: /etc/bugseeker-app.pem
    ```
 
 3. **Build & deploy the release**:
@@ -255,15 +255,15 @@ Deploy artifacts live in `deploy/`: `Dockerfile`, `entrypoint.sh`,
    ```
 
    `deploy.sh` automatically: tars the release → scp → extracts to
-   `/opt/codeseeker` → runs `bin/codeseeker eval "Codeseeker.Release.migrate()"`
-   → restarts `codeseeker.service` → checks `/healthz`.
+   `/opt/bugseeker` → runs `bin/bugseeker eval "Bugseeker.Release.migrate()"`
+   → restarts `bugseeker.service` → checks `/healthz`.
 
 4. **systemd unit** (first deploy only):
 
    ```bash
-   sudo cp deploy/systemd/codeseeker.service /etc/systemd/system/
+   sudo cp deploy/systemd/bugseeker.service /etc/systemd/system/
    sudo systemctl daemon-reload
-   sudo systemctl enable --now codeseeker
+   sudo systemctl enable --now bugseeker
    ```
 
 5. **Expose the webhook** (pick one):
@@ -277,14 +277,14 @@ Deploy artifacts live in `deploy/`: `Dockerfile`, `entrypoint.sh`,
    then re-deliver the `ping` event — confirm it appears in the log:
 
    ```bash
-   journalctl -u codeseeker -f
+   journalctl -u bugseeker -f
    ```
 
 ### Docker (alternative)
 
 ```bash
-docker build -f deploy/Dockerfile -t codeseeker .
-docker run --env-file /etc/codeseeker.env -p 4000:4000 codeseeker
+docker build -f deploy/Dockerfile -t bugseeker .
+docker run --env-file /etc/bugseeker.env -p 4000:4000 bugseeker
 ```
 
 `entrypoint.sh` runs migrations automatically before starting the server.
@@ -303,7 +303,7 @@ docker run --env-file /etc/codeseeker.env -p 4000:4000 codeseeker
 ### Monitoring the queue and results
 
 ```bash
-mix codeseeker.stats          # runtime counters
+mix bugseeker.stats          # runtime counters
 ```
 
 Oban stores every job in PostgreSQL — a restart loses nothing; failed jobs
@@ -315,12 +315,12 @@ retry with backoff (max 5 attempts for `FetchDiffJob`/`AgentJob`, 3 for
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | Webhook 401 | `GITHUB_WEBHOOK_SECRET` mismatch | Match it to the GitHub App secret |
-| No review appears | Repo disabled / agents filtered out by file types | `/codeseeker status` on the PR; check the agent's `## File Types` |
+| No review appears | Repo disabled / agents filtered out by file types | `/bugseeker status` on the PR; check the agent's `## File Types` |
 | Duplicate reviews | — | Not possible: runs are keyed by unique `(repo, PR, head_sha)`; redeliveries are discarded |
 | LLM rate limit | Too many concurrent calls | Lower the `review` queue `limit` (default 30) in the Oban config |
 | Inline comments missing | Invalid line (GitHub 422) | Automatically demoted to the summary — expected behavior |
-| Wrong framework agents firing | Repo has no routing configured | Add a `.codeseeker.yml` to the target repo |
-| Config change not taking effect | `.codeseeker.yml` on the wrong branch | The file is read from the **PR head sha**, not the default branch |
+| Wrong framework agents firing | Repo has no routing configured | Add a `.bugseeker.yml` to the target repo |
+| Config change not taking effect | `.bugseeker.yml` on the wrong branch | The file is read from the **PR head sha**, not the default branch |
 
 ### Scale
 
@@ -333,9 +333,9 @@ retry with backoff (max 5 attempts for `FetchDiffJob`/`AgentJob`, 3 for
 
 ### Known limitations
 
-- `/codeseeker` toggles are in-memory — persist them in `config :repos` or
-  `.codeseeker.yml`.
-- `/codeseeker` commands can be triggered by anyone who can comment on a PR
+- `/bugseeker` toggles are in-memory — persist them in `config :repos` or
+  `.bugseeker.yml`.
+- `/bugseeker` commands can be triggered by anyone who can comment on a PR
   (internal single-org design).
 - False positives are controlled via severity thresholds + the agent files;
   review them periodically (PRD §3 recommends every 2 weeks).

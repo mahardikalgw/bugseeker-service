@@ -1,4 +1,4 @@
-defmodule Codeseeker.Repo.Migrations.AddObanTables do
+defmodule Bugseeker.Repo.Migrations.AddObanTables do
   use Ecto.Migration
 
   def up do

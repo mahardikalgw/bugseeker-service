@@ -1,4 +1,4 @@
-defmodule CodeseekerWeb.WebhookTestHelper do
+defmodule BugseekerWeb.WebhookTestHelper do
   @moduledoc """
   Builds signed webhook requests for controller tests, mimicking GitHub's
   `X-Hub-Signature-256` HMAC-SHA256 scheme.
@@ -24,7 +24,7 @@ defmodule CodeseekerWeb.WebhookTestHelper do
       |> put_req_header("x-github-event", event)
       |> put_req_header("x-hub-signature-256", sign(@secret, body))
 
-    CodeseekerWeb.Endpoint.call(conn, [])
+    BugseekerWeb.Endpoint.call(conn, [])
   end
 
   @doc "A pull_request `opened` payload with a repo + installation."

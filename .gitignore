@@ -23,7 +23,7 @@ erl_crash.dump
 /tmp/
 
 # Ignore package tarball (built via "mix hex.build").
-codeseeker-*.tar
+bugseeker-*.tar
 
 
 # Local environment and secrets
@@ -32,4 +32,5 @@ codeseeker-*.tar
 # Static-analysis workspace (future checkout cache)
 /priv/workspace/
 
-.kilo
+.kilo.elixir_ls/
+.elixir_ls/

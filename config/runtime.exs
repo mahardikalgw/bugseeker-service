@@ -13,16 +13,16 @@ if config_env() == :dev do
 end
 
 if System.get_env("PHX_SERVER") do
-  config :codeseeker, CodeseekerWeb.Endpoint, server: true
+  config :bugseeker, BugseekerWeb.Endpoint, server: true
 end
 
-config :codeseeker, CodeseekerWeb.Endpoint,
+config :bugseeker, BugseekerWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
 # GitHub App credentials. Required in prod; in dev/test, values may come
 # from .env or from compile-time config (tests define their own).
 strict? = config_env() == :prod
-existing_github = Application.get_env(:codeseeker, :github) || %{}
+existing_github = Application.get_env(:bugseeker, :github) || %{}
 
 github = %{
   app_id: System.get_env("GITHUB_APP_ID") || existing_github[:app_id],
@@ -46,9 +46,9 @@ if strict? do
   end)
 end
 
-config :codeseeker, :github, github
+config :bugseeker, :github, github
 
-config :codeseeker, :llm_api, %{
+config :bugseeker, :llm_api, %{
   api_key: System.get_env("DEEPSEEK_API_KEY"),
   api_url: System.get_env("DEEPSEEK_API_URL") || "https://api.deepseek.com",
   model: System.get_env("DEEPSEEK_MODEL") || "deepseek-chat"
@@ -63,5 +63,5 @@ if strict? and is_nil(database_url) do
 end
 
 if database_url do
-  config :codeseeker, Codeseeker.Repo, url: database_url, pool_size: 20
+  config :bugseeker, Bugseeker.Repo, url: database_url, pool_size: 20
 end

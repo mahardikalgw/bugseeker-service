@@ -2,6 +2,6 @@
 set -e
 
 # Run pending migrations, then start the server.
-bin/codeseeker eval "Codeseeker.Release.migrate()"
+bin/bugseeker eval "Bugseeker.Release.migrate()"
 
-exec bin/codeseeker start
+exec bin/bugseeker start

@@ -1,4 +1,4 @@
-defmodule Codeseeker.Repo.Migrations.CreatePrReviewsAndReviewIssues do
+defmodule Bugseeker.Repo.Migrations.CreatePrReviewsAndReviewIssues do
   use Ecto.Migration
 
   def change do

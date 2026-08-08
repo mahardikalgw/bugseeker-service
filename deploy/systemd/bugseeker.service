@@ -1,0 +1,14 @@
+[Unit]
+Description=Bugseeker (AI Code Review Bot)
+After=network-online.target
+
+[Service]
+User=bugseeker
+WorkingDirectory=/opt/bugseeker
+EnvironmentFile=/etc/bugseeker.env
+ExecStart=/opt/bugseeker/bin/bugseeker start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

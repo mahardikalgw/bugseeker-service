@@ -23,17 +23,17 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
       libssl3 libstdc++6 libncurses6 ca-certificates curl \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd --create-home --shell /bin/bash codeseeker
+    && useradd --create-home --shell /bin/bash bugseeker
 
-WORKDIR /opt/codeseeker
+WORKDIR /opt/bugseeker
 
-COPY --from=build /app/_build/prod/rel/codeseeker ./
+COPY --from=build /app/_build/prod/rel/bugseeker ./
 
 # Self-migrates on boot (Postgres must be reachable and DATABASE_URL set).
 COPY deploy/entrypoint.sh ./bin/entrypoint.sh
 RUN chmod +x ./bin/entrypoint.sh
 
-USER codeseeker
+USER bugseeker
 
 ENV PORT=4000 \
     PHX_SERVER=true
@@ -43,4 +43,4 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD curl -f http://localhost:4000/healthz || exit 1
 
-CMD ["/opt/codeseeker/bin/entrypoint.sh"]
+CMD ["/opt/bugseeker/bin/entrypoint.sh"]

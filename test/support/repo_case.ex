@@ -1,4 +1,4 @@
-defmodule Codeseeker.RepoCase do
+defmodule Bugseeker.RepoCase do
   @moduledoc """
   Shared setup for tests that touch the database / Oban. Must be used with
   `async: false`.
@@ -11,18 +11,18 @@ defmodule Codeseeker.RepoCase do
 
   using do
     quote do
-      import Codeseeker.RepoCase
+      import Bugseeker.RepoCase
       import Ecto.Query
       import Mox
 
-      alias Codeseeker.Repo
+      alias Bugseeker.Repo
 
       @moduletag :repo_case
 
       setup do
         Mox.set_mox_global()
         Mox.verify_on_exit!()
-        Ecto.Adapters.SQL.Sandbox.checkout(Codeseeker.Repo)
+        Ecto.Adapters.SQL.Sandbox.checkout(Bugseeker.Repo)
         :ok
       end
     end
@@ -50,10 +50,10 @@ defmodule Codeseeker.RepoCase do
     files = Map.get(attrs, :files)
     attrs = Map.delete(attrs, :files)
 
-    {:ok, created} = Codeseeker.Reviews.create_pr_review(attrs)
+    {:ok, created} = Bugseeker.Reviews.create_pr_review(attrs)
 
     if files do
-      {:ok, stored} = Codeseeker.Reviews.store_files(created, files)
+      {:ok, stored} = Bugseeker.Reviews.store_files(created, files)
       stored
     else
       created
@@ -62,11 +62,11 @@ defmodule Codeseeker.RepoCase do
 
   @doc "Performs a job for `worker` with `args`, returning its result."
   def perform(worker, args) do
-    Oban.Testing.perform_job(worker, args, repo: Codeseeker.Repo)
+    Oban.Testing.perform_job(worker, args, repo: Bugseeker.Repo)
   end
 
   @doc "Returns jobs enqueued for a worker (with the Oban repo bound)."
   def enqueued(worker) do
-    Oban.Testing.all_enqueued(repo: Codeseeker.Repo, worker: worker)
+    Oban.Testing.all_enqueued(repo: Bugseeker.Repo, worker: worker)
   end
 end

@@ -1,6 +1,6 @@
 import Config
 
-config :codeseeker, CodeseekerWeb.Endpoint,
+config :bugseeker, BugseekerWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}],
   check_origin: false,
   code_reloader: true,

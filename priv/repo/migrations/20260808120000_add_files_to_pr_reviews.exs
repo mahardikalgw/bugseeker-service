@@ -1,4 +1,4 @@
-defmodule Codeseeker.Repo.Migrations.AddFilesToPrReviews do
+defmodule Bugseeker.Repo.Migrations.AddFilesToPrReviews do
   use Ecto.Migration
 
   def change do

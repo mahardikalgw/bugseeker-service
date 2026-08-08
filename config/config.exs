@@ -7,15 +7,15 @@
 import Config
 
 # General application configuration
-config :codeseeker,
+config :bugseeker,
   generators: [timestamp_type: :utc_datetime]
 
 # Configure the endpoint
-config :codeseeker, CodeseekerWeb.Endpoint,
+config :bugseeker, BugseekerWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
-    formats: [json: CodeseekerWeb.ErrorJSON],
+    formats: [json: BugseekerWeb.ErrorJSON],
     layout: false
   ]
 
@@ -29,11 +29,11 @@ config :phoenix, :json_library, Jason
 
 # Ecto repository (defaults to the current OS user via libpq; override with
 # DATABASE_URL in runtime.exs).
-config :codeseeker, ecto_repos: [Codeseeker.Repo]
+config :bugseeker, ecto_repos: [Bugseeker.Repo]
 
-config :codeseeker, Codeseeker.Repo,
+config :bugseeker, Bugseeker.Repo,
   hostname: "localhost",
-  database: "codeseeker_dev",
+  database: "bugseeker_dev",
   pool_size: 10,
   queue_target: 5_000,
   queue_interval: 1_000,
@@ -45,7 +45,7 @@ config :codeseeker, Codeseeker.Repo,
 #   - review:   global cap on concurrent DeepSeek calls -> avoids rate-limit storms
 #               (this is the key lever for the 500-PR scale; raise/lower here)
 config :oban, Oban,
-  repo: Codeseeker.Repo,
+  repo: Bugseeker.Repo,
   queues: [
     webhook: [limit: 4],
     review: [limit: 30]
@@ -57,7 +57,7 @@ config :oban, Oban,
 # Files that are never reviewed, whatever their size.
 # Patterns are strings (compiled at runtime) so releases can serialize them
 # on every supported Elixir version.
-config :codeseeker, :exclusions, %{
+config :bugseeker, :exclusions, %{
   patterns: [
     ~S(\.lock$),
     ~S(package-lock\.json$),
@@ -81,10 +81,10 @@ config :codeseeker, :exclusions, %{
 
 # Cross-language review agents (each reviews the whole PR diff). Lives under
 # priv/ so releases bundle it automatically.
-config :codeseeker, :agents_dir, "priv/agents"
+config :bugseeker, :agents_dir, "priv/agents"
 
 # DeepSeek LLM settings
-config :codeseeker, :llm, %{
+config :bugseeker, :llm, %{
   temperature: 0.1,
   max_tokens: 4096,
   timeout_ms: 120_000,
@@ -94,28 +94,28 @@ config :codeseeker, :llm, %{
 }
 
 # GitHub API retry backoff (per call, in ms)
-config :codeseeker, :github_retry_backoff_ms, [2_000, 6_000, 18_000]
+config :bugseeker, :github_retry_backoff_ms, [2_000, 6_000, 18_000]
 
 # Repository guidelines file fetched once per PR and appended to prompts
-config :codeseeker, :guidelines_path, "docs/engineering-guidelines.md"
+config :bugseeker, :guidelines_path, "docs/engineering-guidelines.md"
 
 # Inline comments are posted for issues with severity >= this threshold.
 # CRITICAL > HIGH > MEDIUM > LOW > INFO. Overridable per repo via PerRepo.
-config :codeseeker, :min_inline_severity, "HIGH"
+config :bugseeker, :min_inline_severity, "HIGH"
 
 # Hard limits
-config :codeseeker, :max_files_per_pr, 30
-config :codeseeker, :dedup_ttl_seconds, 3600
-config :codeseeker, :review_concurrency, 10
+config :bugseeker, :max_files_per_pr, 30
+config :bugseeker, :dedup_ttl_seconds, 3600
+config :bugseeker, :review_concurrency, 10
 
-# Per-repo overrides (loaded at boot into Codeseeker.PerRepo).
+# Per-repo overrides (loaded at boot into Bugseeker.PerRepo).
 # Omitting a repo means: bot enabled, all manifest skills active,
 # min_inline_severity = global default.
-config :codeseeker, :repos, %{}
+config :bugseeker, :repos, %{}
 
 # HTTP client modules (swapped for Mox mocks in tests)
-config :codeseeker, :github_client, Codeseeker.Github.Client.Github
-config :codeseeker, :llm_client, Codeseeker.Llm.DeepSeek.OpenAI
+config :bugseeker, :github_client, Bugseeker.Github.Client.Github
+config :bugseeker, :llm_client, Bugseeker.Llm.DeepSeek.OpenAI
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

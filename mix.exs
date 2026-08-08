@@ -1,9 +1,9 @@
-defmodule Codeseeker.MixProject do
+defmodule Bugseeker.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :codeseeker,
+      app: :bugseeker,
       version: "0.1.0",
       elixir: "~> 1.17",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -19,7 +19,7 @@ defmodule Codeseeker.MixProject do
   # Type `mix help compile.app` for more information.
   def application do
     [
-      mod: {Codeseeker.Application, []},
+      mod: {Bugseeker.Application, []},
       extra_applications: [:logger, :runtime_tools]
     ]
   end
@@ -37,7 +37,7 @@ defmodule Codeseeker.MixProject do
   # Releases
   def releases do
     [
-      codeseeker: [
+      bugseeker: [
         include_executables_for: [:unix],
         steps: [:assemble, :tar]
       ]

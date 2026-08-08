@@ -1,7 +1,7 @@
-# Codeseeker — AI Code Review Bot
+# Bugseeker — AI Code Review Bot
 
 <p align="center">
-  <img src="https://ih1.redbubble.net/image.613528364.8220/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.u1.jpg" alt="Codeseeker" width="300">
+  <img src="https://ih1.redbubble.net/image.613528364.8220/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.u1.jpg" alt="Bugseeker" width="300">
 </p>
 
 > Internal tool: GitHub PR automated review powered by DeepSeek, written in Elixir (Phoenix + PostgreSQL + Oban).
@@ -32,7 +32,7 @@ mix deps.get
 mix ecto.create && mix ecto.migrate
 cp .env.example .env        # fill in values for e2e
 mix test                    # 84 tests (DB sandbox + mocks)
-mix codeseeker.stats        # runtime counters
+mix bugseeker.stats        # runtime counters
 mix phx.server              # runs on PORT (default 4000)
 ```
 
@@ -90,15 +90,15 @@ auto-skip when no matching file). And:
 raises reported issues whose message matches the key to that severity.
 
 **Adding an agent**: add `priv/agents/<name>.md` (or `priv/agents/<framework>/<dimension>.md`),
-restart. Every PR is reviewed by the repo's configured agents (`config :codeseeker, :agents_dir`;
-per-repo overrides via `:repos` or `/codeseeker` commands).
+restart. Every PR is reviewed by the repo's configured agents (`config :bugseeker, :agents_dir`;
+per-repo overrides via `:repos` or `/bugseeker` commands).
 
 ## Per-repo configuration
 
-### `.codeseeker.yml` (in the reviewed repo — recommended)
+### `.bugseeker.yml` (in the reviewed repo — recommended)
 
-Each repository can control its own review via a `.codeseeker.yml` (or
-`.codeseeker.yaml`) at its root. It is fetched once per review run (at the
+Each repository can control its own review via a `.bugseeker.yml` (or
+`.bugseeker.yaml`) at its root. It is fetched once per review run (at the
 PR head sha), and it **wins over the service-side config**:
 
 ```yaml
@@ -118,10 +118,10 @@ min_inline_severity: HIGH
 Unknown agent names are ignored; a repo can never disable every agent by
 accident. Without this file, the service-side config below applies.
 
-### Service-side (`config :codeseeker, :repos` in `config/config.exs`)
+### Service-side (`config :bugseeker, :repos` in `config/config.exs`)
 
 ```elixir
-config :codeseeker, :repos, %{
+config :bugseeker, :repos, %{
   "acme-internal/web-frontend" => %{enabled: true, agents: ["security", "bug", "performance"], min_inline_severity: "HIGH"},
   "acme-internal/legacy-api"   => %{enabled: false}
 }
@@ -131,9 +131,9 @@ Runtime changes (lost on restart — persist them in the config above):
 
 | Command | Effect |
 |---|---|
-| `/codeseeker status` | Show bot state for the repo |
-| `/codeseeker enable-agent <name>` | Enable a review agent |
-| `/codeseeker disable-agent <name>` | Disable a review agent |
+| `/bugseeker status` | Show bot state for the repo |
+| `/bugseeker enable-agent <name>` | Enable a review agent |
+| `/bugseeker disable-agent <name>` | Disable a review agent |
 
 ## Configuration knobs (`config/config.exs`)
 
@@ -158,14 +158,14 @@ for CI (lint + test) and CD (tag-triggered release push over Tailscale SSH).
 
 Checklist:
 
-1. Provision PostgreSQL on the VPS and create `codeseeker_prod` (plus a user + password).
-2. `deploy/codeseeker.env.example` → `/etc/codeseeker.env` (chmod 600) with real secrets, including `DATABASE_URL`.
-3. Build the release, extract to `/opt/codeseeker`, run `bin/codeseeker eval "Ecto.Migrator.run(Codeseeker.Repo, ...)"` (or `mix ecto.migrate`) to create the Oban + review tables, then enable `codeseeker.service`.
+1. Provision PostgreSQL on the VPS and create `bugseeker_prod` (plus a user + password).
+2. `deploy/bugseeker.env.example` → `/etc/bugseeker.env` (chmod 600) with real secrets, including `DATABASE_URL`.
+3. Build the release, extract to `/opt/bugseeker`, run `bin/bugseeker eval "Ecto.Migrator.run(Bugseeker.Repo, ...)"` (or `mix ecto.migrate`) to create the Oban + review tables, then enable `bugseeker.service`.
 4. Expose the webhook publicly (`tailscale funnel --bg 4000` on the VPS, or a reverse proxy).
 5. Point the GitHub App webhook URL at `https://<host>/webhook/github` and confirm a `ping` event in the logs.
 
 ## Known limitations
 
-- Per-repo runtime toggles (`/codeseeker`) are in-memory and reset on restart — persist them in `config :codeseeker, :repos`.
-- `/codeseeker` commands can be triggered by anyone who can comment on a PR (internal single-org tool).
+- Per-repo runtime toggles (`/bugseeker`) are in-memory and reset on restart — persist them in `config :bugseeker, :repos`.
+- `/bugseeker` commands can be triggered by anyone who can comment on a PR (internal single-org tool).
 - False positives are controlled by severity thresholds and the agent files; review them every 2 weeks (PRD §3).

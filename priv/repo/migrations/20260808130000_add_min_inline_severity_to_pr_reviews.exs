@@ -1,4 +1,4 @@
-defmodule Codeseeker.Repo.Migrations.AddMinInlineSeverityToPrReviews do
+defmodule Bugseeker.Repo.Migrations.AddMinInlineSeverityToPrReviews do
   use Ecto.Migration
 
   def change do
